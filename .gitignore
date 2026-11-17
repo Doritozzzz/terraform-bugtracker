@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Environment secrets: never versioned (only the .example templates are)
+.env
+.env.*
+!.env.*.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Generated deliverables
+*.zip
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
+*.pdf
+# Submission bundle (generated)
+dist/
+
+# Local course materials and notes
+docs/apuntes/
+
+# Terraform state, caches, and sensitive variable files
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

@@ -1,0 +1,76 @@
+name: bugtracker-dev
+
+services:
+  web:
+    build: .
+    # Read-only filesystem, no Linux capabilities and no privilege escalation.
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL}
+      DB_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CACHE_ENABLED: ${CACHE_ENABLED}
+    ports:
+      # Published on localhost only; the healthcheck lives in the Dockerfile.
+      - "127.0.0.1:${WEB_PORT}:3000"
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:18-alpine
+    # Runs as the unprivileged postgres user from the start, with a read-only
+    # filesystem (scratch space in memory), no Linux capabilities and no
+    # privilege escalation.
+    user: postgres
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # PostgreSQL 18 keeps its data under a versioned subdirectory of this path.
+      - db-data:/var/lib/postgresql
+      # Runs only on the first start, while the volume is empty.
+      - type: bind
+        source: ./db/init.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - backend
+    healthcheck:
+      # -h 127.0.0.1 fails until the server accepts network connections, so the
+      # container is not healthy while init.sql is still being loaded.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+networks:
+  # No route to the outside: db is reachable only from containers in this network.
+  backend:
+    internal: true
+  frontend:
+
+volumes:
+  db-data:

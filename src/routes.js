@@ -1,0 +1,214 @@
+import { Router } from 'express';
+import { config } from './config.js';
+import * as cache from './cache.js';
+import * as db from './db.js';
+
+const router = Router();
+
+const INCIDENTS_KEY = 'incidents';
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED'];
+const COLUMNS = 'id, title, system_name, priority, status, created_at, updated_at';
+
+function getCacheKey({ q = '', priority = '', status = '', limit = DEFAULT_LIMIT } = {}) {
+  if (!q && !priority && !status && limit === DEFAULT_LIMIT) {
+    return INCIDENTS_KEY;
+  }
+  return `${INCIDENTS_KEY}:${q || '*'}:${priority || '*'}:${status || '*'}:${limit}`;
+}
+
+function sanitizeFilters(query) {
+  const q = typeof query?.q === 'string' ? query.q.trim().slice(0, 100) : '';
+  const rawPriority = typeof query?.priority === 'string' ? query.priority.trim().toUpperCase() : '';
+  const priority = PRIORITIES.includes(rawPriority) ? rawPriority : '';
+  const rawStatus = typeof query?.status === 'string' ? query.status.trim().toUpperCase() : '';
+  const status = STATUSES.includes(rawStatus) ? rawStatus : '';
+
+  const parsedLimit = parseInt(query?.limit, 10);
+  const limit = Number.isInteger(parsedLimit) && parsedLimit > 0
+    ? Math.min(parsedLimit, MAX_LIMIT)
+    : DEFAULT_LIMIT;
+
+  return { q, priority, status, limit };
+}
+
+const elapsedMs = (start) => Number((performance.now() - start).toFixed(2));
+
+// Liveness: only reports that the process is running. It never touches the
+// database or the cache, so a dependency outage cannot make the web container
+// look unhealthy.
+router.get('/live', (req, res) => {
+  res.type('text/plain').send('ok');
+});
+
+// Runs a health check and measures how long it takes.
+async function probe(check) {
+  const start = performance.now();
+  const up = await check();
+  return { up, latencyMs: elapsedMs(start) };
+}
+
+// Status: reports the state of the dependencies. Both checks run in parallel,
+// so the response time is bounded by the slowest one (2 s timeout each).
+async function statusHandler(req, res) {
+  const [database, redis] = await Promise.all([
+    probe(db.ping),
+    cache.enabled ? probe(cache.ping) : null,
+  ]);
+
+  const services = {
+    database: {
+      type: 'PostgreSQL',
+      status: database.up ? 'up' : 'down',
+      latencyMs: database.latencyMs,
+    },
+    cache: redis
+      ? { type: 'Redis', status: redis.up ? 'up' : 'down', latencyMs: redis.latencyMs }
+      : { type: 'Redis', status: 'disabled' },
+  };
+
+  const degraded = !database.up || (redis !== null && !redis.up);
+
+  res.set('Cache-Control', 'no-store');
+  // Without the database the application cannot work (503). Without the cache
+  // it still works, reading from the database, so it answers 200 as "degraded".
+  res.status(database.up ? 200 : 503).json({
+    status: degraded ? 'degraded' : 'ok',
+    environment: config.env,
+    uptimeSeconds: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+    services,
+  });
+}
+
+router.get('/status', statusHandler);
+router.get('/health', statusHandler);
+
+// Cache-aside read: tries Redis first and falls back to PostgreSQL on a miss
+// or when the cache is down, storing the result for the next request.
+async function readThrough(key, load) {
+  const start = performance.now();
+
+  const cached = await cache.get(key);
+  if (cached !== null) {
+    return { data: cached, source: 'cache', cache: 'HIT', durationMs: elapsedMs(start) };
+  }
+
+  const data = await load();
+  const durationMs = elapsedMs(start);
+  await cache.set(key, data);
+  return {
+    data,
+    source: 'database',
+    cache: cache.enabled ? 'MISS' : 'DISABLED',
+    durationMs,
+  };
+}
+
+// Loads incidents matching the given filters and global status totals.
+// The totals query scans the whole table in parallel with the filtered list query.
+async function loadIncidents({ q = '', priority = '', status = '', limit = DEFAULT_LIMIT } = {}) {
+  const conditions = [];
+  const params = [];
+
+  if (priority) {
+    params.push(priority);
+    conditions.push(`priority = $${params.length}`);
+  }
+
+  if (status) {
+    params.push(status);
+    conditions.push(`status = $${params.length}`);
+  }
+
+  if (q) {
+    const cleanQ = q.startsWith('#') ? q.slice(1).trim() : q;
+    params.push(`%${cleanQ}%`);
+    conditions.push(`(title ILIKE $${params.length} OR system_name ILIKE $${params.length} OR id::text ILIKE $${params.length})`);
+  }
+
+  params.push(limit);
+  const limitPlaceholder = `$${params.length}`;
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const [list, statusCounts, priorityCounts] = await Promise.all([
+    db.pool.query(
+      `SELECT ${COLUMNS} FROM incidents ${whereClause} ORDER BY created_at DESC LIMIT ${limitPlaceholder}`,
+      params,
+    ),
+    db.pool.query('SELECT status, count(*)::int AS count FROM incidents GROUP BY status'),
+    db.pool.query('SELECT priority, count(*)::int AS count FROM incidents GROUP BY priority'),
+  ]);
+
+  const stats = {
+    total: 0,
+    byStatus: { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0 },
+    byPriority: { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 },
+  };
+  for (const row of statusCounts.rows) {
+    stats.byStatus[row.status] = row.count;
+    stats.total += row.count;
+  }
+  for (const row of priorityCounts.rows) {
+    stats.byPriority[row.priority] = row.count;
+  }
+  return { incidents: list.rows, stats };
+}
+
+// Latest incidents matching query parameters plus totals. Cached per parameter combination.
+router.get('/api/incidents', async (req, res) => {
+  const filters = sanitizeFilters(req.query);
+  const cacheKey = getCacheKey(filters);
+  const result = await readThrough(cacheKey, () => loadIncidents(filters));
+  res.set('X-Cache', result.cache);
+  res.set('X-Response-Time', `${result.durationMs}ms`);
+  res.json({
+    data: result.data,
+    meta: { source: result.source, cache: result.cache, durationMs: result.durationMs },
+  });
+});
+
+// Validates the body of a new incident and returns the cleaned fields
+// together with the list of validation errors.
+function validateNewIncident(body) {
+  const errors = [];
+
+  const text = (field, max) => {
+    const value = typeof body?.[field] === 'string' ? body[field].trim() : '';
+    if (value.length === 0 || value.length > max) {
+      errors.push(`${field} must be between 1 and ${max} characters`);
+    }
+    return value;
+  };
+
+  const title = text('title', 150);
+  const systemName = text('system_name', 100);
+  const priority = body?.priority;
+  if (!PRIORITIES.includes(priority)) {
+    errors.push(`priority must be one of ${PRIORITIES.join(', ')}`);
+  }
+
+  return { errors, title, systemName, priority };
+}
+
+// Creates an incident. The cache entry is dropped only after the insert has
+// committed; if Redis is down the entry simply expires on its own.
+router.post('/api/incidents', async (req, res) => {
+  const { errors, title, systemName, priority } = validateNewIncident(req.body);
+  if (errors.length > 0) {
+    return res.status(400).json({ error: 'validation_failed', details: errors });
+  }
+
+  const { rows } = await db.pool.query(
+    `INSERT INTO incidents (title, system_name, priority)
+     VALUES ($1, $2, $3) RETURNING ${COLUMNS}`,
+    [title, systemName, priority],
+  );
+  await cache.del(INCIDENTS_KEY);
+  await cache.delPattern(`${INCIDENTS_KEY}:*`);
+  res.status(201).json({ data: rows[0] });
+});
+
+export default router;
