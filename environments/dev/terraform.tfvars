@@ -1,3 +1,5 @@
 # Development environment settings (no secrets here: this file is versioned).
-project     = "bugtracker"
-environment = "dev"
+project      = "bugtracker"
+environment  = "dev"
+web_replicas = 2
+log_level    = "debug"

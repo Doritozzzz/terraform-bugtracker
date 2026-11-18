@@ -23,3 +23,23 @@ module "database" {
   user        = "tracker"
   init_script = "${path.module}/../../db/init.sql"
 }
+
+module "web" {
+  source = "../../modules/web"
+
+  name       = "${local.name_prefix}-web"
+  source_dir = "${path.module}/../../app"
+  replicas   = var.web_replicas
+  port       = 3000
+  networks   = [docker_network.backend.name]
+
+  # NODE_ENV, PORT and CACHE_ENABLED are omitted: the app defaults
+  # (development, 3000, false) are already the dev values.
+  env = {
+    LOG_LEVEL         = var.log_level
+    DB_HOST           = module.database.host
+    POSTGRES_DB       = module.database.database
+    POSTGRES_USER     = module.database.user
+    POSTGRES_PASSWORD = module.database.password
+  }
+}

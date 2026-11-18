@@ -12,3 +12,13 @@ variable "environment" {
     error_message = "environment must be dev or prod."
   }
 }
+
+variable "web_replicas" {
+  description = "Number of web replicas behind the load balancer."
+  type        = number
+}
+
+variable "log_level" {
+  description = "Application log level: debug, info, warn or error."
+  type        = string
+}
