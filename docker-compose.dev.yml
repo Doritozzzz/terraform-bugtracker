@@ -2,7 +2,7 @@ name: bugtracker-dev
 
 services:
   web:
-    build: .
+    build: ./app
     # Read-only filesystem, no Linux capabilities and no privilege escalation.
     read_only: true
     cap_drop:

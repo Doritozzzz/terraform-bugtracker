@@ -2,7 +2,7 @@ name: bugtracker-prod
 
 services:
   web:
-    build: .
+    build: ./app
     # Restarted after a crash or a reboot, but not after a manual stop.
     restart: unless-stopped
     # Read-only filesystem, no Linux capabilities and no privilege escalation.

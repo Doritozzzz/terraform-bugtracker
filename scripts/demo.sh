@@ -63,48 +63,48 @@ STEPS=(
 
 # section|requirement|file|pattern|mode|why   (mode: F fixed string, R regular expression)
 MAP_ROWS=(
-  "Web application|Framework (Express)|package.json|\"express\"|F|"
-  "Web application|Connects to the database|src/db.js|new Pool(|F|"
-  "Web application|Connects to Redis (prod only)|src/cache.js|new Redis(|F|"
-  "Web application|Page shows the state of both services|src/public/index.html|id=\"health-pill\"|F|"
-  "Web application|Page refreshes the state by itself|src/public/app.js|const STATUS_INTERVAL_MS|F|"
-  "Web application|/status endpoint|src/routes.js|router.get('/status'|F|"
-  "Web application|Health of the dependencies in /status|src/routes.js|async function statusHandler|F|"
-  "Web application|Degraded vs down|src/routes.js|const degraded|F|503 only when the database is down; Redis down still answers 200 'degraded'."
+  "Web application|Framework (Express)|app/package.json|\"express\"|F|"
+  "Web application|Connects to the database|app/src/db.js|new Pool(|F|"
+  "Web application|Connects to Redis (prod only)|app/src/cache.js|new Redis(|F|"
+  "Web application|Page shows the state of both services|app/src/public/index.html|id=\"health-pill\"|F|"
+  "Web application|Page refreshes the state by itself|app/src/public/app.js|const STATUS_INTERVAL_MS|F|"
+  "Web application|/status endpoint|app/src/routes.js|router.get('/status'|F|"
+  "Web application|Health of the dependencies in /status|app/src/routes.js|async function statusHandler|F|"
+  "Web application|Degraded vs down|app/src/routes.js|const degraded|F|503 only when the database is down; Redis down still answers 200 'degraded'."
   "Database|PostgreSQL|docker-compose.prod.yml|image: postgres:18-alpine|F|"
   "Database|Persistence with a named volume|docker-compose.prod.yml|db-data:/var/lib/postgresql|F|The volume outlives the container; removing the container does not remove the data."
   "Database|Connection test command|Makefile|^test-db:|R|"
   "Database|Automatic initialization|docker-compose.prod.yml|target: /docker-entrypoint-initdb.d/init.sql|F|init.sql runs only while the volume is empty."
   "Database|Schema and seed data|db/init.sql|CREATE TABLE incidents|F|"
   "Cache|Redis, production only|docker-compose.prod.yml|image: redis:8-alpine|F|The dev compose file has no cache service."
-  "Cache|Cache-aside read|src/routes.js|async function readThrough|F|"
-  "Cache|Use made visible (X-Cache header)|src/routes.js|res.set('X-Cache'|F|"
+  "Cache|Cache-aside read|app/src/routes.js|async function readThrough|F|"
+  "Cache|Use made visible (X-Cache header)|app/src/routes.js|res.set('X-Cache'|F|"
   "Cache|Redis keeps nothing on disk|docker-compose.prod.yml|--save \"\" --appendonly no|F|It is only a cache; a restart leaves it empty, so it cannot serve stale data."
   "Deployment|Dev compose file|docker-compose.dev.yml|^name:|R|"
   "Deployment|Prod compose file|docker-compose.prod.yml|^name:|R|"
   "Deployment|One .env file per environment|Makefile|^\\.env\\.dev \\.env\\.prod:|R|"
   "Deployment|Internal network|docker-compose.prod.yml|internal: true|F|db and cache have no route to the internet."
   "Deployment|Only the web service publishes a port|docker-compose.prod.yml|127.0.0.1:\${WEB_PORT}:3000|F|Bound to 127.0.0.1: other machines cannot reach it."
-  "Deployment|Healthcheck: web|Dockerfile|^HEALTHCHECK|R|It calls /live only, so a database outage does not mark the web container unhealthy."
+  "Deployment|Healthcheck: web|app/Dockerfile|^HEALTHCHECK|R|It calls /live only, so a database outage does not mark the web container unhealthy."
   "Deployment|Healthcheck: database|docker-compose.prod.yml|pg_isready|F|-h 127.0.0.1 forces a TCP check, which fails until init.sql has loaded."
   "Deployment|Healthcheck: cache|docker-compose.prod.yml|redis-cli -h 127.0.0.1 ping|F|"
   "Security|No credentials in the YAML|docker-compose.prod.yml|POSTGRES_PASSWORD: \${POSTGRES_PASSWORD}|F|The compose files only reference variables."
-  "Security|Secrets read from the environment|src/config.js|password: text('POSTGRES_PASSWORD')|F|"
+  "Security|Secrets read from the environment|app/src/config.js|password: text('POSTGRES_PASSWORD')|F|"
   "Security|.env files ignored by Git|.gitignore|.env.*|F|The real secrets never reach the repository."
   "Security|Restrictive file permissions|Makefile|umask 077|F|The generated .env files are created with mode 600."
   "Security|init.sql mounted read-only|docker-compose.prod.yml|create_host_path: false|F|"
   "Security|No capabilities, no privilege escalation|docker-compose.prod.yml|cap_drop:|F|"
-  "Security|Web runs as an unprivileged user|Dockerfile|^USER node|R|"
+  "Security|Web runs as an unprivileged user|app/Dockerfile|^USER node|R|"
   "Security|Restart policy in prod|docker-compose.prod.yml|restart: unless-stopped|F|Restarts after a crash or a reboot, not after a manual stop."
   "Automation|make build|Makefile|^build:|R|"
   "Automation|make up-dev|Makefile|^up-dev:|R|"
   "Automation|make up-prod|Makefile|^up-prod:|R|"
   "Automation|make down|Makefile|^down:|R|"
   "Automation|make clean|Makefile|^clean:|R|"
-  "API|Limits and filters|src/routes.js|function sanitizeFilters|F|"
-  "API|Maximum limit|src/routes.js|const MAX_LIMIT|F|"
-  "API|One cache key per query|src/routes.js|function getCacheKey|F|"
-  "API|A write invalidates the cache|src/routes.js|cache.delPattern|F|No read can return stale data after a write."
+  "API|Limits and filters|app/src/routes.js|function sanitizeFilters|F|"
+  "API|Maximum limit|app/src/routes.js|const MAX_LIMIT|F|"
+  "API|One cache key per query|app/src/routes.js|function getCacheKey|F|"
+  "API|A write invalidates the cache|app/src/routes.js|cache.delPattern|F|No read can return stale data after a write."
 )
 
 # ======================================================================= terminal
@@ -411,10 +411,10 @@ step_healthchecks() {
     [ "${LAST%% *}" = healthy ] || bad=$((bad + 1))
   done
   check "containers that are not healthy (of 5)" 0 "$bad"
-  where Dockerfile '^HEALTHCHECK'
+  where app/Dockerfile '^HEALTHCHECK'
   where docker-compose.dev.yml 'pg_isready' F
   where docker-compose.prod.yml 'redis-cli -h 127.0.0.1 ping' F
-  where src/routes.js "router.get('/live'" F
+  where app/src/routes.js "router.get('/live'" F
   label why: "web asks /live, which never touches the database. db runs pg_isready over TCP (-h 127.0.0.1), which fails until init.sql has loaded. cache sends PING with its password."
 }
 
@@ -440,7 +440,7 @@ step_hardening() {
   check "containers with a writable root filesystem" 0 "$rw"
   check "containers that keep a capability" 0 "$caps"
   check "containers without no-new-privileges" 0 "$nnp"
-  where Dockerfile '^USER node'
+  where app/Dockerfile '^USER node'
   where docker-compose.prod.yml 'cap_drop:' F
   where docker-compose.prod.yml 'no-new-privileges:true' F
   where docker-compose.prod.yml 'memory: 256M' F
@@ -461,8 +461,8 @@ step_status() {
   check "prod overall status" ok "$(top "$ST_BODY")"
   check "prod database" up "$(svc "$ST_BODY" database)"
   check "prod cache" up "$(svc "$ST_BODY" cache)"
-  where src/routes.js "router.get('/status'" F
-  where src/routes.js 'async function statusHandler' F
+  where app/src/routes.js "router.get('/status'" F
+  where app/src/routes.js 'async function statusHandler' F
   label why: "/status asks the database and Redis directly. 503 only when the database is down. With Redis down it answers 200 'degraded', because the app still works without it."
 }
 
@@ -516,9 +516,9 @@ step_api() {
   headers_show "$(url_of prod)/api/incidents?limit=10"
   repeat=$RD_CACHE
   check "the same query again" HIT "$repeat"
-  where src/routes.js 'function sanitizeFilters' F
-  where src/routes.js 'const MAX_LIMIT' F
-  where src/routes.js 'function getCacheKey' F
+  where app/src/routes.js 'function sanitizeFilters' F
+  where app/src/routes.js 'const MAX_LIMIT' F
+  where app/src/routes.js 'function getCacheKey' F
   label why: "Each combination of filters has its own Redis key. limit is capped at 100 and invalid values fall back to the defaults."
 }
 
@@ -568,8 +568,8 @@ step_cache() {
   check "the new incident is already counted (total + 1)" $((total_before + 1)) "$total_after"
   headers_show "$(url_of prod)/api/incidents"
   check "the read after that" HIT "$RD_CACHE"
-  where src/routes.js 'async function readThrough' F
-  where src/routes.js 'cache.delPattern' F
+  where app/src/routes.js 'async function readThrough' F
+  where app/src/routes.js 'cache.delPattern' F
   label why: "Every write deletes the cached keys, so no read can return stale data. If Redis is down during a write, the keys expire by themselves after ${ttl} s."
 }
 
@@ -596,7 +596,7 @@ step_cache_ui() {
     note "No reads from the page were detected (hits +$dh, misses +$dm): not counted."
     SKIP=$((SKIP + 1))
   fi
-  where src/public/app.js 'async function loadIncidents' F
+  where app/src/public/app.js 'async function loadIncidents' F
   label why: "The page reads through the same Redis key as curl. Redis counts hits and misses itself, so the terminal can confirm what the page did."
 }
 
@@ -727,7 +727,7 @@ step_redis_outage() {
   check "reads keep working (HTTP code)" 200 "$read_code"
   check "reads are served by PostgreSQL" MISS "$read_cache"
   check_has "the outage is in the server log" "$LAST" cache_unavailable
-  where src/routes.js 'const degraded' F
+  where app/src/routes.js 'const degraded' F
   where Makefile '^kill-cache:'
   label why: "Redis only speeds things up. With it down the app answers 200 'degraded' and reads go to PostgreSQL."
 
@@ -777,8 +777,8 @@ step_db_outage() {
     note "The cached list had expired, so the read could not be served (HTTP $read_code)."
   fi
   check "a write is rejected" 503 "$PO_CODE"
-  where Dockerfile '^HEALTHCHECK'
-  where src/routes.js "router.get('/live'" F
+  where app/Dockerfile '^HEALTHCHECK'
+  where app/src/routes.js "router.get('/live'" F
   where Makefile '^kill-db:'
   label why: "/live does not touch the database, so the web container stays healthy while /status reports 503. Reads can still come from Redis until the key expires. Writes fail cleanly."
 
