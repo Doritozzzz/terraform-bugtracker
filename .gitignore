@@ -24,15 +24,24 @@ dist/
 # Local course materials and notes
 docs/apuntes/
 
-# Terraform state, caches, and sensitive variable files
+# Terraform: provider cache, state and its lock (the state holds secrets in plain text)
 .terraform/
 *.tfstate
 *.tfstate.*
+.terraform.tfstate.lock.info
 crash.log
 crash.*.log
-*.tfvars
-*.tfvars.json
-!*.tfvars.example
+
+# Saved plans also contain every value in plain text
+tfplan
+*.tfplan
+
+# Secrets go in secrets.auto.tfvars (loaded automatically, never versioned).
+# terraform.tfvars only holds non-secret settings, so it IS versioned.
+secrets.auto.tfvars
+*.secret.tfvars
+
+# Local overrides
 override.tf
 override.tf.json
 *_override.tf
