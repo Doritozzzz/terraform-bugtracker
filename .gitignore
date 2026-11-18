@@ -41,6 +41,9 @@ tfplan
 secrets.auto.tfvars
 *.secret.tfvars
 
+# Files rendered by Terraform at apply time (e.g. the HAProxy config)
+.generated/
+
 # Local overrides
 override.tf
 override.tf.json

@@ -14,6 +14,13 @@ resource "docker_network" "backend" {
   internal = true
 }
 
+# Internal network between the load balancer and the web replicas, so the
+# load balancer never reaches the database.
+resource "docker_network" "app" {
+  name     = "${local.name_prefix}-app"
+  internal = true
+}
+
 module "database" {
   source = "../../modules/database"
 
@@ -31,7 +38,7 @@ module "web" {
   source_dir = "${path.module}/../../app"
   replicas   = var.web_replicas
   port       = 3000
-  networks   = [docker_network.backend.name]
+  networks   = [docker_network.app.name, docker_network.backend.name]
 
   # NODE_ENV, PORT and CACHE_ENABLED are omitted: the app defaults
   # (development, 3000, false) are already the dev values.
@@ -42,4 +49,14 @@ module "web" {
     POSTGRES_USER     = module.database.user
     POSTGRES_PASSWORD = module.database.password
   }
+}
+
+module "load_balancer" {
+  source = "../../modules/load-balancer"
+
+  name        = "${local.name_prefix}-lb"
+  backends    = module.web.backends
+  health_path = "/live"
+  port        = var.lb_port
+  networks    = [docker_network.frontend.name, docker_network.app.name]
 }

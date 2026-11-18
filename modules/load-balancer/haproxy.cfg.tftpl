@@ -1,0 +1,48 @@
+global
+  # Logs go to stdout so Docker (and the log collector) picks them up,
+  # instead of the default syslog socket that does not exist in a container.
+  log stdout format raw local0
+
+# Docker's embedded DNS. Replicas get a new IP every time they are recreated;
+# without this HAProxy would keep the address it resolved at startup.
+resolvers docker
+  nameserver dns 127.0.0.11:53
+
+defaults
+  mode http
+  log global
+  # One line per request, including which replica served it.
+  option httplog
+
+  # HAProxy has no default timeouts: without them a stuck connection stays open forever.
+  timeout connect 5s
+  timeout client 30s
+  timeout server 30s
+
+  # Every server is health checked and resolved through Docker's DNS.
+  # init-addr none lets HAProxy start even if a replica does not exist yet.
+  default-server check resolvers docker init-addr none
+
+frontend web
+  bind :${listen_port}
+  # Lets clients (and tests) see which replica answered.
+  http-response set-header X-Served-By %[srv_name]
+  default_backend app
+
+backend app
+  balance ${balance}
+  # Active check against the liveness endpoint: a replica that stops
+  # answering is taken out of rotation before users hit it.
+  option httpchk GET ${health_path}
+  # If a connection to a replica fails, the last retry goes to another one.
+  option redispatch
+%{ for backend in backends ~}
+  server ${split(":", backend)[0]} ${backend}
+%{ endfor ~}
+
+# Internal port, not published to the host: Prometheus scrapes /metrics and
+# the container healthcheck calls /healthz.
+frontend metrics
+  bind :${metrics_port}
+  monitor-uri /healthz
+  http-request use-service prometheus-exporter if { path /metrics }

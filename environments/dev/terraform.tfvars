@@ -3,3 +3,4 @@ project      = "bugtracker"
 environment  = "dev"
 web_replicas = 2
 log_level    = "debug"
+lb_port      = 3000

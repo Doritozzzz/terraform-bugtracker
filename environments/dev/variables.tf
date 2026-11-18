@@ -22,3 +22,8 @@ variable "log_level" {
   description = "Application log level: debug, info, warn or error."
   type        = string
 }
+
+variable "lb_port" {
+  description = "Port on 127.0.0.1 where the application is served."
+  type        = number
+}
