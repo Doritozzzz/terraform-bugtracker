@@ -13,3 +13,13 @@ resource "docker_network" "backend" {
   name     = "${local.name_prefix}-backend"
   internal = true
 }
+
+module "database" {
+  source = "../../modules/database"
+
+  name        = "${local.name_prefix}-db"
+  network     = docker_network.backend.name
+  database    = "tracker"
+  user        = "tracker"
+  init_script = "${path.module}/../../db/init.sql"
+}
