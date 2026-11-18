@@ -38,9 +38,13 @@ function isDatabaseUnavailable(error) {
 const app = express();
 app.disable('x-powered-by');
 
-// Basic security headers for every response.
+// Basic security headers for every response, plus the replica that answered:
+// X-Instance for curl and tests, and Server-Timing because it is the only
+// response header the page's JavaScript can read for the page load itself.
 app.use((req, res, next) => {
   res.set({
+    'X-Instance': config.instance,
+    'Server-Timing': `instance;desc="${config.instance}"`,
     'Content-Security-Policy': "default-src 'self'; frame-ancestors 'none'",
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer',
@@ -76,7 +80,15 @@ app.use('/api', (req, res, next) => {
 
 app.use(express.json({ limit: '10kb' }));
 app.use(router);
-app.use(express.static(path.join(import.meta.dirname, 'public')));
+app.use(
+  express.static(path.join(import.meta.dirname, 'public'), {
+    // no-cache = revalidate on every load: a reload always goes through the
+    // load balancer, so the page shows the replica that served it this time.
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) res.set('Cache-Control', 'no-cache');
+    },
+  }),
+);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'not_found' });

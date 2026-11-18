@@ -1,3 +1,5 @@
+import os from 'node:os';
+
 // Reads and validates every environment variable in one place, once, at startup.
 // If something is missing or malformed the process fails immediately with a
 // clear message, instead of crashing later in the middle of a request.
@@ -37,6 +39,9 @@ const oneOf = (name, allowed, fallback) => {
 const cacheEnabled = oneOf('CACHE_ENABLED', ['true', 'false'], 'false') === 'true';
 
 export const config = {
+  // Name of this replica. Docker sets the hostname of each container, so it
+  // matches the container name shown by `docker ps`.
+  instance: os.hostname(),
   env: oneOf('NODE_ENV', ['development', 'production'], 'development'),
   port: integer('PORT', 3000),
   logLevel: oneOf('LOG_LEVEL', ['debug', 'info', 'warn', 'error'], 'info'),
@@ -62,6 +67,7 @@ export const config = {
 // Same shape as config but without any secret: this is the only version
 // that is allowed to be printed in logs.
 export const describeConfig = () => ({
+  instance: config.instance,
   env: config.env,
   port: config.port,
   logLevel: config.logLevel,

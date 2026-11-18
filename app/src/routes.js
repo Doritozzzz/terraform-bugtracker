@@ -76,6 +76,7 @@ async function statusHandler(req, res) {
   // it still works, reading from the database, so it answers 200 as "degraded".
   res.status(database.up ? 200 : 503).json({
     status: degraded ? 'degraded' : 'ok',
+    instance: config.instance,
     environment: config.env,
     uptimeSeconds: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),

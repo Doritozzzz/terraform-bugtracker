@@ -16,8 +16,11 @@ resource "docker_image" "this" {
 resource "docker_container" "this" {
   count = var.replicas
 
-  name  = "${var.name}-${count.index + 1}"
-  image = docker_image.this.image_id
+  name = "${var.name}-${count.index + 1}"
+  # Docker's default hostname is the container ID. Using the name lets the
+  # application report which replica answered in a readable way.
+  hostname = "${var.name}-${count.index + 1}"
+  image    = docker_image.this.image_id
 
   env = [for key, value in var.env : "${key}=${value}"]
 

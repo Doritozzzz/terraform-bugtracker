@@ -6,6 +6,10 @@ const REQUEST_TIMEOUT_MS = 5000;
 const MAX_POINTS = 30;
 const MAX_READS = 10;
 const MAX_EVENTS = 12;
+// Status checks kept to show how the load balancer spreads them.
+const MAX_HITS = 30;
+// Replica colours. Green and red are left out: they already mean up and down.
+const REPLICA_COLORS = ['violet', 'cyan', 'info', 'warn'];
 
 const PRIORITIES = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', CRITICAL: 'Critical' };
 const PRIORITY_RANK = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
@@ -42,6 +46,8 @@ const state = {
   history: { web: [], database: [], cache: [] },
   uptime: null,
   lastCheck: null,
+  hits: [],
+  replicaColors: new Map(),
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -311,6 +317,11 @@ function renderSource() {
   if (msEl) {
     msEl.textContent = last ? `${formatMs(last.ms)} ms` : '–';
   }
+  const instanceEl = $('#source-instance');
+  if (instanceEl) {
+    instanceEl.textContent = last?.instance ? `· ${shortName(last.instance)}` : '';
+    instanceEl.title = last?.instance ? `Served by ${last.instance}` : '';
+  }
   const sparkEl = $('#source-spark');
   if (sparkEl) {
     sparkEl.replaceChildren(sparkline(state.reads.map((read) => read.ms).reverse()));
@@ -504,6 +515,80 @@ function renderDeployment() {
   $('#d-check').textContent = state.lastCheck ? state.lastCheck.toLocaleTimeString('en-GB') : '–';
 }
 
+// Colour taken from the replica number (web-1, web-2...), so a replica keeps
+// its colour across reloads. Names without a number get the next free colour.
+function replicaColor(name) {
+  if (!state.replicaColors.has(name)) {
+    const number = Number(/-(\d+)$/.exec(name)?.[1]);
+    const index = Number.isInteger(number) && number > 0 ? number - 1 : state.replicaColors.size;
+    state.replicaColors.set(name, REPLICA_COLORS[index % REPLICA_COLORS.length]);
+  }
+  return state.replicaColors.get(name);
+}
+
+// Short form for compact places: bugtracker-dev-web-2 -> web-2.
+const shortName = (name) => /([a-z0-9]+-\d+)$/i.exec(name)?.[1] ?? name;
+
+// Replica that served this page, read from the Server-Timing header of the
+// page load (the page's own headers are not readable any other way). It stays
+// the same until the page is reloaded, like the page itself.
+const PAGE_INSTANCE =
+  performance.getEntriesByType('navigation')[0]?.serverTiming?.find((entry) => entry.name === 'instance')
+    ?.description ?? null;
+
+function renderInstance() {
+  const name = PAGE_INSTANCE;
+  const title = name ? `This page was served by ${name}. Reload to be balanced again.` : 'Replica not reported';
+
+  const badge = $('#instance-badge');
+  badge.textContent = name ?? '–';
+  badge.title = title;
+  badge.className = `tag mono hide-sm c-${name ? replicaColor(name) : 'neutral'}`;
+  $('#d-instance').textContent = name ?? '–';
+
+  const mini = $('#mini-instance');
+  mini.title = title;
+  mini.querySelector('.dot').className = name ? `dot dot-replica c-${replicaColor(name)}` : 'dot dot-disabled';
+  mini.querySelector('.mini-svc-state').textContent = name ? shortName(name) : '–';
+}
+
+function renderBalancing() {
+  const strip = $('#lb-strip');
+  const bars = $('#lb-bars');
+  if (!state.hits.length) {
+    strip.replaceChildren();
+    bars.replaceChildren(h('p', { class: 'empty', text: 'Waiting for the first status check…' }));
+    return;
+  }
+
+  // Oldest first, so the newest check appears on the right.
+  strip.replaceChildren(
+    ...[...state.hits].reverse().map((name) =>
+      h('li', { class: `lb-cell c-${replicaColor(name)}`, title: name }),
+    ),
+  );
+
+  const counts = new Map();
+  for (const name of state.hits) counts.set(name, (counts.get(name) ?? 0) + 1);
+  const total = state.hits.length;
+
+  bars.replaceChildren(
+    ...[...counts.keys()].sort().map((name) => {
+      const count = counts.get(name);
+      const fill = h('span');
+      fill.style.width = `${(count / total) * 100}%`;
+      return h(
+        'div',
+        { class: `bar-row lb-row c-${replicaColor(name)}`, title: `${name}: ${count} of the last ${total} checks` },
+        h('span', { class: 'bar-label mono', text: name }),
+        h('div', { class: 'bar' }, fill),
+        h('span', { class: 'bar-value', text: `${Math.round((count / total) * 100)}%` }),
+      );
+    }),
+  );
+  $('#lb-sub').textContent = `Live: replica that answered each of the last ${total} background status checks`;
+}
+
 function renderReads() {
   const list = $('#read-log');
   if (!state.reads.length) {
@@ -518,6 +603,7 @@ function renderReads() {
         {},
         h('span', { class: 'mono', text: read.at.toLocaleTimeString('en-GB') }),
         tag(source.label, source.kind),
+        read.instance ? h('span', { class: 'mono hide-sm', text: read.instance }) : null,
         h('span', { class: 'mono ms', text: `${formatMs(read.ms)} ms` }),
       );
     }),
@@ -579,6 +665,11 @@ function commit(next) {
 function applyStatus(status, roundTrip) {
   const { database, cache } = status.services;
   state.uptime = status.uptimeSeconds;
+  if (status.instance) {
+    state.hits.unshift(status.instance);
+    state.hits.length = Math.min(state.hits.length, MAX_HITS);
+  }
+  renderBalancing();
 
   const badge = $('#env-badge');
   badge.textContent = status.environment === 'production' ? 'Production' : 'Development';
@@ -634,6 +725,7 @@ function renderAll() {
   renderMiniServices();
   renderTable();
   renderReads();
+  renderBalancing();
 }
 
 async function loadIncidents() {
@@ -667,7 +759,12 @@ async function loadIncidents() {
     state.stats = data.stats;
     state.loaded = true;
     state.error = false;
-    state.reads.unshift({ at: new Date(), cache: meta.cache, ms: meta.durationMs });
+    state.reads.unshift({
+      at: new Date(),
+      cache: meta.cache,
+      ms: meta.durationMs,
+      instance: response.headers.get('X-Instance'),
+    });
     state.reads.length = Math.min(state.reads.length, MAX_READS);
   } catch {
     state.error = true;
@@ -849,6 +946,7 @@ setInterval(() => {
 
 buildServiceCards();
 route();
+renderInstance();
 renderAll();
 renderEvents();
 loadIncidents();

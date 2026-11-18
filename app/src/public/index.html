@@ -20,6 +20,7 @@
         <span>Incident Tracker</span>
       </a>
       <span id="env-badge" class="tag c-neutral hide-sm">…</span>
+      <a id="instance-badge" class="tag c-neutral mono hide-sm" href="#/system" title="Replica that served this page">…</a>
 
       <div class="topbar-right">
         <a id="health-pill" class="pill" href="#/system" title="Open system status">
@@ -123,10 +124,13 @@
               <span class="mini-svc-name">Redis</span>
               <span class="mini-svc-state mono">–</span>
             </a>
+            <a href="#/system" id="mini-instance" class="mini-svc" title="Replica that served this page">
+              <span class="dot dot-unknown"></span>
+              <span class="mini-svc-name">Replica</span>
+              <span class="mini-svc-state mono">–</span>
+            </a>
           </div>
         </div>
-
-        <div class="query-status-divider" aria-hidden="true"></div>
 
         <div class="query-status-source">
           <div class="query-source-text">
@@ -134,6 +138,7 @@
             <div class="query-source-badge-wrap">
               <span id="source-name" class="source-badge tag c-neutral sk">–</span>
               <span id="source-ms" class="source-ms mono">–</span>
+              <span id="source-instance" class="source-ms mono" title="Replica that served this query"></span>
             </div>
           </div>
           <div id="source-spark" class="source-spark-mini" title="Recent query latency history"></div>
@@ -202,6 +207,7 @@
           <header class="card-head"><h2>Deployment</h2></header>
           <dl class="card-body facts">
             <dt>Environment</dt><dd id="d-env">–</dd>
+            <dt>Page served by</dt><dd id="d-instance" class="mono">–</dd>
             <dt>Server uptime</dt><dd id="d-uptime">–</dd>
             <dt>Last check</dt><dd id="d-check">–</dd>
             <dt>Check interval</dt><dd id="d-poll">3 s</dd>
@@ -215,6 +221,14 @@
           <ul id="read-log" class="log"></ul>
         </article>
       </div>
+
+      <article class="card section-gap">
+        <header class="card-head"><h2>Load balancing</h2><span id="lb-sub" class="sub">Live: replica that answered each background status check</span></header>
+        <div class="card-body">
+          <ol id="lb-strip" class="lb-strip" aria-label="Replica per check, oldest first"></ol>
+          <div id="lb-bars"></div>
+        </div>
+      </article>
 
       <article class="card section-gap">
         <header class="card-head"><h2>Service events</h2><span class="sub">Since you opened this page</span></header>
