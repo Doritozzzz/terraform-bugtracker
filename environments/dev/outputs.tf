@@ -3,6 +3,22 @@ output "app_url" {
   value       = module.load_balancer.url
 }
 
+output "grafana_url" {
+  description = "Grafana: metrics and logs. User: grafana_user; password: terraform output -raw grafana_password."
+  value       = module.dashboards.url
+}
+
+output "grafana_user" {
+  description = "Grafana administrator user."
+  value       = module.dashboards.admin_user
+}
+
+output "grafana_password" {
+  description = "Grafana administrator password."
+  value       = module.dashboards.admin_password
+  sensitive   = true
+}
+
 output "prometheus_url" {
   description = "Prometheus web UI: metrics, targets and their health."
   value       = module.metrics_store.url

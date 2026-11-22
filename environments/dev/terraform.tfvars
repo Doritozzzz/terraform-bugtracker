@@ -6,3 +6,4 @@ log_level            = "debug"
 lb_port              = 3000
 storage_console_port = 9001
 prometheus_port      = 9090
+grafana_port         = 3001

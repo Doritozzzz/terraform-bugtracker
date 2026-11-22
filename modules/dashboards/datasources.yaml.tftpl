@@ -1,0 +1,18 @@
+# Connections Grafana reads data from. Provisioned from this file on every
+# start, so they cannot be edited (or broken) from the web UI.
+apiVersion: 1
+
+# Data sources removed from this file are deleted from Grafana too.
+prune: true
+
+datasources:
+%{ for ds in datasources ~}
+  - name: ${ds.name}
+    # Fixed ID, so dashboards can refer to it.
+    uid: ${ds.uid}
+    type: ${ds.type}
+    url: ${ds.url}
+%{ if ds.default ~}
+    isDefault: true
+%{ endif ~}
+%{ endfor ~}

@@ -3,3 +3,4 @@ project      = "bugtracker"
 environment  = "prod"
 web_replicas = 3
 lb_port      = 8080
+grafana_port = 8081

@@ -168,3 +168,20 @@ module "metrics_store" {
 
   labels = merge(local.labels, { service = "metrics-store" })
 }
+
+# Web UI over the metrics and logs of this environment.
+module "dashboards" {
+  source = "../../modules/dashboards"
+
+  name = "${local.name_prefix}-grafana"
+  # frontend only to publish its port on the host.
+  networks = [docker_network.monitoring.name, docker_network.frontend.name]
+  port     = var.grafana_port
+
+  datasources = [
+    { uid = "prometheus", name = "Prometheus", type = "prometheus", url = module.metrics_store.internal_url, default = true },
+    { uid = "loki", name = "Loki", type = "loki", url = module.log_store.internal_url },
+  ]
+
+  labels = merge(local.labels, { service = "dashboards" })
+}
