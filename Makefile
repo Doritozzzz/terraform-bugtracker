@@ -48,9 +48,11 @@ stop: ## Stop the containers; volumes and data are kept (ENV=dev)
 
 # docker start instead of terraform apply: with the container stopped, the
 # provider no longer sees its published ports and would replace the load
-# balancer instead of just starting it.
+# balancer instead of just starting it. One-shot containers (*-init) are
+# skipped: they already did their job, and if one ran again before its
+# service was up, its failed exit code would break every later plan.
 start: ## Start the stopped containers again (ENV=dev)
-	docker ps -aq --filter name=^$(PREFIX)- --filter status=exited | xargs -r docker start
+	docker ps -a --filter name=^$(PREFIX)- --filter status=exited --format '{{.Names}}' | grep -v -- '-init$$' | xargs -r docker start
 
 destroy: ## Delete everything, data volumes included (ENV=dev)
 	$(TF) destroy

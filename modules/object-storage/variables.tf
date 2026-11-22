@@ -46,6 +46,12 @@ variable "restart" {
   description = "Docker restart policy: no, on-failure, always or unless-stopped. Null keeps the Docker default (no)."
   type        = string
   default     = null
+
+  # Checked at plan time; Docker would only reject a typo while applying.
+  validation {
+    condition     = var.restart == null ? true : contains(["no", "on-failure", "always", "unless-stopped"], var.restart)
+    error_message = "restart must be no, on-failure, always or unless-stopped."
+  }
 }
 
 variable "memory" {
