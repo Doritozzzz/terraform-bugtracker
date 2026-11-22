@@ -69,17 +69,19 @@ module "cache" {
 module "web" {
   source = "../../modules/web"
 
-  name       = "${local.name_prefix}-web"
-  source_dir = "${path.module}/../../app"
-  replicas   = var.web_replicas
-  port       = 3000
-  networks   = [docker_network.app.name, docker_network.backend.name]
-  restart    = "unless-stopped"
-  memory     = 256
-  labels     = merge(local.labels, { service = "web" })
+  name         = "${local.name_prefix}-web"
+  source_dir   = "${path.module}/../../app"
+  replicas     = var.web_replicas
+  port         = 3000
+  metrics_port = 9464
+  # monitoring lets Prometheus read the metrics port, which the load balancer never forwards.
+  networks = [docker_network.app.name, docker_network.backend.name, docker_network.monitoring.name]
+  restart  = "unless-stopped"
+  memory   = 256
+  labels   = merge(local.labels, { service = "web" })
 
-  # PORT, REDIS_PORT and CACHE_TTL_SECONDS are omitted: the app defaults
-  # (3000, 6379, 60 seconds) are the values used. log_level is not set in
+  # PORT, METRICS_PORT, REDIS_PORT and CACHE_TTL_SECONDS are omitted: the app
+  # defaults (3000, 9464, 6379, 60 seconds) are the values used. log_level is not set in
   # terraform.tfvars, so LOG_LEVEL is skipped and the app default (info) applies.
   env = {
     NODE_ENV          = "production"
@@ -193,6 +195,7 @@ module "metrics_store" {
       # for 5 minutes. Using the scrape time, it disappears on the next scrape.
       honor_timestamps = false
     },
+    { name = "web", targets = module.web.metrics_targets },
     { name = "haproxy", targets = [module.load_balancer.metrics_target] },
     { name = "loki", targets = [module.log_store.metrics_target] },
     { name = "alloy", targets = [module.log_collector.metrics_target] },

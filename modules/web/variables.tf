@@ -23,6 +23,12 @@ variable "port" {
   type        = number
 }
 
+variable "metrics_port" {
+  description = "Port where the application serves Prometheus metrics inside the container. Null if it serves none."
+  type        = number
+  default     = null
+}
+
 variable "networks" {
   description = "Names or IDs of the Docker networks every replica joins."
   type        = list(string)

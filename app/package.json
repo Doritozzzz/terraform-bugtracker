@@ -13,6 +13,7 @@
   "dependencies": {
     "express": "5.2.1",
     "ioredis": "6.0.0",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "prom-client": "15.1.3"
   }
 }

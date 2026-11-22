@@ -56,6 +56,10 @@ export const config = {
   instance: os.hostname(),
   env: oneOf('NODE_ENV', ['development', 'production'], 'development'),
   port: integer('PORT', 3000),
+  // Separate port for Prometheus, so /metrics is never reachable through the
+  // load balancer, which only forwards to the application port. 9464 is the
+  // default of OpenTelemetry's Prometheus exporter.
+  metricsPort: integer('METRICS_PORT', 9464),
   logLevel: oneOf('LOG_LEVEL', ['debug', 'info', 'warn', 'error'], 'info'),
   db: {
     host: text('DB_HOST'),
@@ -84,6 +88,7 @@ export const describeConfig = () => ({
   instance: config.instance,
   env: config.env,
   port: config.port,
+  metricsPort: config.metricsPort,
   logLevel: config.logLevel,
   db: {
     host: config.db.host,

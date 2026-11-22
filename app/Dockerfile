@@ -13,8 +13,9 @@ COPY src ./src
 # owned by root, so the process cannot modify them.
 USER node
 
-# Documentation only: the load balancer reaches the app on this port.
-EXPOSE 3000
+# Documentation only: the load balancer reaches the app on 3000 and
+# Prometheus reads its metrics on 9464.
+EXPOSE 3000 9464
 
 # Liveness only: /live does not depend on PostgreSQL or Redis.
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s \

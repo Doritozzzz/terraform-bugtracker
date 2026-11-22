@@ -17,6 +17,7 @@ const { config, describeConfig } = loaded;
 // loaded only after it has been validated.
 const db = await import('./db.js');
 const cache = await import('./cache.js');
+const metrics = await import('./metrics.js');
 const { default: router } = await import('./routes.js');
 
 const DB_UNAVAILABLE_CODES = new Set([
@@ -62,16 +63,20 @@ const QUIET_PATHS = new Set(['/live', '/status', '/health']);
 // log line) when the app is called directly.
 const requestId = (req) => req.get('x-request-id');
 
+// Every request is timed once: the duration feeds the metrics and, except for
+// the status endpoints, the debug log line.
 app.use((req, res, next) => {
-  if (QUIET_PATHS.has(req.path)) return next();
   const start = performance.now();
   res.on('finish', () => {
+    const durationMs = performance.now() - start;
+    metrics.observeRequest(req, res, durationMs / 1000);
+    if (QUIET_PATHS.has(req.path)) return;
     log.debug('request', {
       requestId: requestId(req),
       method: req.method,
       path: req.path,
       status: res.statusCode,
-      durationMs: Number((performance.now() - start).toFixed(2)),
+      durationMs: Number(durationMs.toFixed(2)),
     });
   });
   next();
@@ -131,10 +136,12 @@ const server = app.listen(config.port, (error) => {
   log.info('server_started', { port: config.port, config: describeConfig() });
 });
 
+metrics.start();
+
 let shuttingDown = false;
 
-// Stops accepting requests, closes the connections to PostgreSQL and Redis and
-// exits. The timer forces the exit before Docker's 10 s grace period ends.
+// Stops accepting requests, closes the metrics port and the connections to
+// PostgreSQL and Redis, and exits. The timer forces the exit before Docker's 10 s grace period ends.
 function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
@@ -147,6 +154,7 @@ function shutdown(signal) {
 
   server.close(async () => {
     try {
+      await metrics.close();
       await cache.close();
       await db.close();
       log.info('shutdown_complete');

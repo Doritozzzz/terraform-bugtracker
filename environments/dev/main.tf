@@ -53,15 +53,17 @@ module "database" {
 module "web" {
   source = "../../modules/web"
 
-  name       = "${local.name_prefix}-web"
-  source_dir = "${path.module}/../../app"
-  replicas   = var.web_replicas
-  port       = 3000
-  networks   = [docker_network.app.name, docker_network.backend.name]
-  labels     = merge(local.labels, { service = "web" })
+  name         = "${local.name_prefix}-web"
+  source_dir   = "${path.module}/../../app"
+  replicas     = var.web_replicas
+  port         = 3000
+  metrics_port = 9464
+  # monitoring lets Prometheus read the metrics port, which the load balancer never forwards.
+  networks = [docker_network.app.name, docker_network.backend.name, docker_network.monitoring.name]
+  labels   = merge(local.labels, { service = "web" })
 
-  # NODE_ENV, PORT and CACHE_ENABLED are omitted: the app defaults
-  # (development, 3000, false) are already the dev values.
+  # NODE_ENV, PORT, METRICS_PORT and CACHE_ENABLED are omitted: the app
+  # defaults (development, 3000, 9464, false) are already the dev values.
   env = {
     LOG_LEVEL         = var.log_level
     DB_HOST           = module.database.host
@@ -161,6 +163,7 @@ module "metrics_store" {
       # for 5 minutes. Using the scrape time, it disappears on the next scrape.
       honor_timestamps = false
     },
+    { name = "web", targets = module.web.metrics_targets },
     { name = "haproxy", targets = [module.load_balancer.metrics_target] },
     { name = "loki", targets = [module.log_store.metrics_target] },
     { name = "alloy", targets = [module.log_collector.metrics_target] },
