@@ -1,5 +1,8 @@
 resource "docker_image" "redis" {
   name = var.image
+  # Pulled images are shared by every project and environment on the host:
+  # deleting it on destroy would fail while another environment uses it.
+  keep_locally = true
 }
 
 # Generated once and kept in the Terraform state.

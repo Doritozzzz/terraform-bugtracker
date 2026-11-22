@@ -6,6 +6,9 @@ locals {
 
 resource "docker_image" "haproxy" {
   name = var.image
+  # Pulled images are shared by every project and environment on the host:
+  # deleting it on destroy would fail while another environment uses it.
+  keep_locally = true
 }
 
 # The config is rendered to a file and bind-mounted read-only. The provider's
