@@ -1,0 +1,27 @@
+global:
+  # The default is 1m; 15s lets an alert react within half a minute.
+  scrape_interval: 15s
+
+scrape_configs:
+  # Prometheus's own health and storage.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:${http_port}"]
+%{ for job in scrape_jobs ~}
+
+  - job_name: ${job.name}
+%{ if job.honor_timestamps != null ~}
+    honor_timestamps: ${job.honor_timestamps}
+%{ endif ~}
+    static_configs:
+      - targets: ${jsonencode(job.targets)}
+%{ if length(job.keep) > 0 ~}
+    # Only series whose labels match all of these are stored.
+    metric_relabel_configs:
+%{ for label, value in job.keep ~}
+      - source_labels: [${label}]
+        regex: ${jsonencode(value)}
+        action: keep
+%{ endfor ~}
+%{ endif ~}
+%{ endfor ~}

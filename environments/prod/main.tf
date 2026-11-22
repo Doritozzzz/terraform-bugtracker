@@ -103,10 +103,12 @@ module "load_balancer" {
   backends    = module.web.backends
   health_path = "/live"
   port        = var.lb_port
-  networks    = [docker_network.frontend.name, docker_network.app.name]
-  restart     = "unless-stopped"
-  memory      = 128
-  labels      = merge(local.labels, { service = "load-balancer" })
+  # frontend publishes the app, app reaches the replicas and storage, and
+  # monitoring lets Prometheus read the metrics port (never published).
+  networks = [docker_network.frontend.name, docker_network.app.name, docker_network.monitoring.name]
+  restart  = "unless-stopped"
+  memory   = 128
+  labels   = merge(local.labels, { service = "load-balancer" })
 
   # The bucket is served under its own name (/static/...), so no path rewrite is needed.
   routes = [{
@@ -157,4 +159,46 @@ module "log_collector" {
   memory           = 128
   proxy_memory     = 64
   labels           = merge(local.labels, { service = "log-collector" })
+}
+
+# CPU, memory, network and health of every container on the host.
+module "container_metrics" {
+  source = "../../modules/container-metrics"
+
+  name        = "${local.name_prefix}-cadvisor"
+  networks    = [docker_network.monitoring.name]
+  keep_labels = ["project", "environment", "service"]
+  restart     = "unless-stopped"
+  memory      = 64
+  labels      = merge(local.labels, { service = "container-metrics" })
+}
+
+# Collects and stores the metrics of this environment. Its web UI is not
+# published in prod: Grafana is the way in.
+module "metrics_store" {
+  source = "../../modules/metrics-store"
+
+  name     = "${local.name_prefix}-prometheus"
+  networks = [docker_network.monitoring.name]
+
+  scrape_jobs = [
+    {
+      name    = "cadvisor"
+      targets = [module.container_metrics.metrics_target]
+      # cAdvisor reports every container on the host: keep only this
+      # environment's, by the labels it exports as container_label_<name>.
+      keep = { for k, v in local.labels : "container_label_${k}" => v }
+      # cAdvisor stamps its samples with its own time, which stops Prometheus
+      # from marking a stopped container's series as gone: it would linger
+      # for 5 minutes. Using the scrape time, it disappears on the next scrape.
+      honor_timestamps = false
+    },
+    { name = "haproxy", targets = [module.load_balancer.metrics_target] },
+    { name = "loki", targets = [module.log_store.metrics_target] },
+    { name = "alloy", targets = [module.log_collector.metrics_target] },
+  ]
+
+  restart = "unless-stopped"
+  memory  = 256
+  labels  = merge(local.labels, { service = "metrics-store" })
 }

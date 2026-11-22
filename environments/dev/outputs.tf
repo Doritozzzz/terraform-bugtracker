@@ -3,6 +3,11 @@ output "app_url" {
   value       = module.load_balancer.url
 }
 
+output "prometheus_url" {
+  description = "Prometheus web UI: metrics, targets and their health."
+  value       = module.metrics_store.url
+}
+
 output "storage_console_url" {
   description = "MinIO console. User: storage_console_user; password: terraform output -raw storage_console_password."
   value       = module.storage.console_url
