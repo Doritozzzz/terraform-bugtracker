@@ -118,19 +118,19 @@ module "load_balancer" {
 }
 
 # Shared storage for the static files of the web: one copy for every replica,
-# like S3 in the cloud. On the app network so the load balancer and the web
-# reach it, and on frontend so its console can be published.
+# like S3 in the cloud. Only on the app network, where the load balancer and
+# the web reach it. The admin console is a dev tool and is not published here,
+# so MinIO stays off the frontend network and has no access to the outside.
 module "storage" {
   source = "../../modules/object-storage"
 
-  name         = "${local.name_prefix}-storage"
-  networks     = [docker_network.frontend.name, docker_network.app.name]
-  bucket       = "static"
-  source_dir   = "${path.module}/../../static"
-  console_port = var.storage_console_port
-  restart      = "unless-stopped"
-  memory       = 256
-  labels       = merge(local.labels, { service = "storage" })
+  name       = "${local.name_prefix}-storage"
+  networks   = [docker_network.app.name]
+  bucket     = "static"
+  source_dir = "${path.module}/../../static"
+  restart    = "unless-stopped"
+  memory     = 256
+  labels     = merge(local.labels, { service = "storage" })
 }
 
 # Central log store: every container log of this environment ends up here.

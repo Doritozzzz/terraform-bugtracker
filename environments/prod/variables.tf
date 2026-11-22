@@ -34,8 +34,3 @@ variable "lb_port" {
   description = "Port on 127.0.0.1 where the application is served."
   type        = number
 }
-
-variable "storage_console_port" {
-  description = "Port on 127.0.0.1 where the MinIO console is served."
-  type        = number
-}
