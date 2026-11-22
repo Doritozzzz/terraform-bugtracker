@@ -31,6 +31,13 @@ module "database" {
   init_script = "${path.module}/../../db/init.sql"
 }
 
+module "cache" {
+  source = "../../modules/cache"
+
+  name    = "${local.name_prefix}-cache"
+  network = docker_network.backend.name
+}
+
 module "web" {
   source = "../../modules/web"
 
@@ -40,7 +47,8 @@ module "web" {
   port       = 3000
   networks   = [docker_network.app.name, docker_network.backend.name]
 
-  # PORT is omitted: the app default (3000) is the port used.
+  # PORT, REDIS_PORT and CACHE_TTL_SECONDS are omitted: the app defaults
+  # (3000, 6379, 60 seconds) are the values used.
   env = {
     NODE_ENV          = "production"
     LOG_LEVEL         = var.log_level
@@ -48,6 +56,9 @@ module "web" {
     POSTGRES_DB       = module.database.database
     POSTGRES_USER     = module.database.user
     POSTGRES_PASSWORD = module.database.password
+    CACHE_ENABLED     = "true"
+    REDIS_HOST        = module.cache.host
+    REDIS_PASSWORD    = module.cache.password
   }
 }
 
