@@ -8,6 +8,16 @@ output "port" {
   value       = local.api_port
 }
 
+output "backend" {
+  description = "host:port of the S3 API, ready to give to a load balancer."
+  value       = "${docker_container.minio.name}:${local.api_port}"
+}
+
+output "health_path" {
+  description = "Unauthenticated HTTP path that answers 200 while MinIO is alive."
+  value       = "/minio/health/live"
+}
+
 output "bucket" {
   description = "Bucket name. Objects are served at /<bucket>/<file>."
   value       = var.bucket

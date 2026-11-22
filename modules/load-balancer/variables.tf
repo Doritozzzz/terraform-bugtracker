@@ -28,6 +28,24 @@ variable "networks" {
   type        = list(string)
 }
 
+variable "routes" {
+  description = "Extra backends chosen by path prefix (e.g. /static/ to object storage). Anything else goes to backends."
+  type = list(object({
+    name        = string
+    path_prefix = string
+    servers     = list(string)
+    health_path = string
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for r in var.routes : can(regex("^[a-z0-9_-]+$", r.name)) && r.name != "app" && startswith(r.path_prefix, "/") && length(r.servers) > 0
+    ])
+    error_message = "Each route needs a name of lowercase letters, digits, _ or - (not \"app\"), a path_prefix starting with / and at least one server."
+  }
+}
+
 variable "balance" {
   description = "HAProxy balancing algorithm."
   type        = string

@@ -23,6 +23,7 @@ resource "local_file" "config" {
     balance      = var.balance
     health_path  = var.health_path
     backends     = var.backends
+    routes       = var.routes
   })
 
   # The provider default is 0777 (writable by anyone).

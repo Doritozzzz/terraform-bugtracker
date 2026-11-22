@@ -82,6 +82,14 @@ module "load_balancer" {
   networks    = [docker_network.frontend.name, docker_network.app.name]
   restart     = "unless-stopped"
   memory      = 128
+
+  # The bucket is served under its own name (/static/...), so no path rewrite is needed.
+  routes = [{
+    name        = "storage"
+    path_prefix = "/${module.storage.bucket}/"
+    servers     = [module.storage.backend]
+    health_path = module.storage.health_path
+  }]
 }
 
 # Shared storage for the static files of the web: one copy for every replica,

@@ -27,17 +27,35 @@ frontend web
   bind :${listen_port}
   # Lets clients (and tests) see which replica answered.
   http-response set-header X-Served-By %[srv_name]
+  # Path-based routing: a request whose path starts with a route prefix goes
+  # to that route's backend; everything else goes to the application.
+%{ for route in routes ~}
+  use_backend ${route.name} if { path_beg ${route.path_prefix} }
+%{ endfor ~}
   default_backend app
 
 backend app
   balance ${balance}
   # Active check against the liveness endpoint: a replica that stops
-  # answering is taken out of rotation before users hit it.
-  option httpchk GET ${health_path}
+  # answering is taken out of rotation before users hit it. Sent as HTTP/1.1
+  # with a Host header: the legacy form (option httpchk GET <path>) sends
+  # HTTP/1.0 without one, which strict servers such as MinIO reject with 400.
+  option httpchk
+  http-check send meth GET uri ${health_path} ver HTTP/1.1 hdr Host localhost
   # If a connection to a replica fails, the last retry goes to another one.
   option redispatch
 %{ for backend in backends ~}
   server ${split(":", backend)[0]} ${backend}
+%{ endfor ~}
+%{ for route in routes ~}
+
+# Extra backend for the ${route.path_prefix} route, health checked like the replicas.
+backend ${route.name}
+  option httpchk
+  http-check send meth GET uri ${route.health_path} ver HTTP/1.1 hdr Host localhost
+%{ for server in route.servers ~}
+  server ${split(":", server)[0]} ${server}
+%{ endfor ~}
 %{ endfor ~}
 
 # Internal port, not published to the host: Prometheus scrapes /metrics and
