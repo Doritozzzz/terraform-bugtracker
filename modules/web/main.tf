@@ -34,7 +34,8 @@ resource "docker_container" "this" {
   # of 20 MB per container); docker logs and the Docker API still read it.
   log_driver = "local"
 
-  env = [for key, value in var.env : "${key}=${value}"]
+  # Null values are skipped, so the caller can leave a variable to the app default.
+  env = [for key, value in var.env : "${key}=${value}" if value != null]
 
   # Hardening: no Linux capabilities and no privilege escalation. The
   # unprivileged user and the healthcheck come from the Dockerfile.

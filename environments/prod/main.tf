@@ -58,7 +58,8 @@ module "web" {
   memory     = 256
 
   # PORT, REDIS_PORT and CACHE_TTL_SECONDS are omitted: the app defaults
-  # (3000, 6379, 60 seconds) are the values used.
+  # (3000, 6379, 60 seconds) are the values used. log_level is not set in
+  # terraform.tfvars, so LOG_LEVEL is skipped and the app default (info) applies.
   env = {
     NODE_ENV          = "production"
     LOG_LEVEL         = var.log_level

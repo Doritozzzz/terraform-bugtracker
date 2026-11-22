@@ -45,12 +45,12 @@ resource "docker_container" "redis" {
   env = ["REDIS_PASSWORD=${random_password.this.result}"]
 
   # The shell expands the password from the environment, so it is not
-  # repeated in the container command. Pure cache: no snapshots, no
-  # append-only file, and the least recently used keys are evicted when
-  # max_memory is reached.
+  # repeated in the container command. Pure cache: snapshots are turned off
+  # (the append-only file is already off by default) and the least recently
+  # used keys are evicted when max_memory is reached.
   command = [
     "sh", "-c",
-    "exec redis-server --requirepass \"$REDIS_PASSWORD\" --save '' --appendonly no --maxmemory ${var.max_memory} --maxmemory-policy allkeys-lru",
+    "exec redis-server --requirepass \"$REDIS_PASSWORD\" --save '' --maxmemory ${var.max_memory} --maxmemory-policy allkeys-lru",
   ]
 
   networks_advanced {

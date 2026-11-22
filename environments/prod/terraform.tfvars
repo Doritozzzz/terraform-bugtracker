@@ -2,6 +2,5 @@
 project              = "bugtracker"
 environment          = "prod"
 web_replicas         = 3
-log_level            = "info"
 lb_port              = 8080
 storage_console_port = 9002

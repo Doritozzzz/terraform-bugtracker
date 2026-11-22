@@ -29,7 +29,7 @@ variable "networks" {
 }
 
 variable "env" {
-  description = "Environment variables for the application. Marked sensitive because it usually holds passwords."
+  description = "Environment variables for the application; null values are not set. Marked sensitive because it usually holds passwords."
   type        = map(string)
   default     = {}
   sensitive   = true

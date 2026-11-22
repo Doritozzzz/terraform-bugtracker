@@ -19,8 +19,9 @@ variable "web_replicas" {
 }
 
 variable "log_level" {
-  description = "Application log level: debug, info, warn or error."
+  description = "Application log level: debug, info, warn or error. Null keeps the app default (info)."
   type        = string
+  default     = null
 }
 
 variable "lb_port" {

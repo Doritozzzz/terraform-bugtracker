@@ -1,10 +1,9 @@
 # Dependencies
 node_modules/
 
-# Environment secrets: never versioned (only the .example templates are)
+# Environment secrets: never versioned
 .env
 .env.*
-!.env.*.example
 
 # Logs
 *.log

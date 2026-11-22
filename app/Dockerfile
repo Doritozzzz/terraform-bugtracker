@@ -1,4 +1,5 @@
-FROM node:24-alpine
+# Exact version, like every other image, so every build uses the same Node.
+FROM node:24.22.3-alpine
 
 WORKDIR /app
 
@@ -12,11 +13,11 @@ COPY src ./src
 # owned by root, so the process cannot modify them.
 USER node
 
-# Documentation only: publishing the port is decided in Compose.
+# Documentation only: the load balancer reaches the app on this port.
 EXPOSE 3000
 
 # Liveness only: /live does not depend on PostgreSQL or Redis.
-HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT:-3000}/live" || exit 1
 
 CMD ["node", "src/server.js"]
