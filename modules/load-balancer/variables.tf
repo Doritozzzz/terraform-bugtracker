@@ -46,3 +46,15 @@ variable "image" {
   type        = string
   default     = "haproxy:3.4.7-alpine"
 }
+
+variable "restart" {
+  description = "Docker restart policy: no, on-failure, always or unless-stopped. Null keeps the Docker default (no)."
+  type        = string
+  default     = null
+}
+
+variable "memory" {
+  description = "Memory limit in MB. Null means no limit."
+  type        = number
+  default     = null
+}

@@ -13,6 +13,13 @@ resource "docker_container" "redis" {
   name  = var.name
   image = docker_image.redis.image_id
 
+  # Optional; all null (Docker defaults) unless the caller sets them.
+  # memory_swap = memory means no swap: the limit is a hard one, and Docker
+  # only accepts changing the limit of a running container if both change together.
+  restart     = var.restart
+  memory      = var.memory
+  memory_swap = var.memory
+
   # Hardening: unprivileged user from the start (the image would otherwise
   # start as root and drop privileges itself), read-only filesystem, no Linux
   # capabilities and no privilege escalation.

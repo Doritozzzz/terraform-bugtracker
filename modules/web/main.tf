@@ -22,6 +22,13 @@ resource "docker_container" "this" {
   hostname = "${var.name}-${count.index + 1}"
   image    = docker_image.this.image_id
 
+  # Optional; all null (Docker defaults) unless the caller sets them.
+  # memory_swap = memory means no swap: the limit is a hard one, and Docker
+  # only accepts changing the limit of a running container if both change together.
+  restart     = var.restart
+  memory      = var.memory
+  memory_swap = var.memory
+
   env = [for key, value in var.env : "${key}=${value}"]
 
   # Hardening: no Linux capabilities and no privilege escalation. The

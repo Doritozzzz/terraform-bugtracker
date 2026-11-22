@@ -29,3 +29,15 @@ variable "init_script" {
   type        = string
   default     = null
 }
+
+variable "restart" {
+  description = "Docker restart policy: no, on-failure, always or unless-stopped. Null keeps the Docker default (no)."
+  type        = string
+  default     = null
+}
+
+variable "memory" {
+  description = "Memory limit in MB. Null means no limit."
+  type        = number
+  default     = null
+}

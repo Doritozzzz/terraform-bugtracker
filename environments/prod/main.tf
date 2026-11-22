@@ -1,3 +1,7 @@
+# High availability: every container restarts on its own if it exits (unless
+# stopped by hand) and has a memory limit, so one leaking container cannot
+# take the memory of the others. Limits come from measured usage plus margin.
+
 locals {
   # Every name starts with "bugtracker-prod", so dev and prod never collide.
   name_prefix = "${var.project}-${var.environment}"
@@ -29,6 +33,8 @@ module "database" {
   database    = "tracker"
   user        = "tracker"
   init_script = "${path.module}/../../db/init.sql"
+  restart     = "unless-stopped"
+  memory      = 512
 }
 
 module "cache" {
@@ -36,6 +42,8 @@ module "cache" {
 
   name    = "${local.name_prefix}-cache"
   network = docker_network.backend.name
+  restart = "unless-stopped"
+  memory  = 128
 }
 
 module "web" {
@@ -46,6 +54,8 @@ module "web" {
   replicas   = var.web_replicas
   port       = 3000
   networks   = [docker_network.app.name, docker_network.backend.name]
+  restart    = "unless-stopped"
+  memory     = 256
 
   # PORT, REDIS_PORT and CACHE_TTL_SECONDS are omitted: the app defaults
   # (3000, 6379, 60 seconds) are the values used.
@@ -70,4 +80,6 @@ module "load_balancer" {
   health_path = "/live"
   port        = var.lb_port
   networks    = [docker_network.frontend.name, docker_network.app.name]
+  restart     = "unless-stopped"
+  memory      = 128
 }

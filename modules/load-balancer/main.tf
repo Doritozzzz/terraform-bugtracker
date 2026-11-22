@@ -31,6 +31,13 @@ resource "docker_container" "haproxy" {
   name  = var.name
   image = docker_image.haproxy.image_id
 
+  # Optional; all null (Docker defaults) unless the caller sets them.
+  # memory_swap = memory means no swap: the limit is a hard one, and Docker
+  # only accepts changing the limit of a running container if both change together.
+  restart     = var.restart
+  memory      = var.memory
+  memory_swap = var.memory
+
   # Hardening: read-only filesystem, no Linux capabilities and no privilege
   # escalation. The image already runs as the unprivileged haproxy user.
   read_only     = true
