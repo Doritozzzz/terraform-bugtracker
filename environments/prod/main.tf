@@ -69,6 +69,8 @@ module "web" {
     CACHE_ENABLED     = "true"
     REDIS_HOST        = module.cache.host
     REDIS_PASSWORD    = module.cache.password
+    # Only used to report whether the static files are being served.
+    STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
   }
 }
 

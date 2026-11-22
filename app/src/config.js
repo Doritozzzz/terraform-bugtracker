@@ -38,6 +38,18 @@ const oneOf = (name, allowed, fallback) => {
 
 const cacheEnabled = oneOf('CACHE_ENABLED', ['true', 'false'], 'false') === 'true';
 
+// Optional absolute http(s) URL; a typo fails at startup instead of on every check.
+const url = (name) => {
+  const value = raw(name);
+  if (value === undefined) return undefined;
+  if (!URL.canParse(value) || !/^https?:$/.test(new URL(value).protocol)) {
+    throw new Error(`${name} must be an http(s) URL, got "${value}"`);
+  }
+  return value;
+};
+
+const storageHealthUrl = url('STORAGE_HEALTH_URL');
+
 export const config = {
   // Name of this replica. Docker sets the hostname of each container, so it
   // matches the container name shown by `docker ps`.
@@ -62,6 +74,8 @@ export const config = {
         ttlSeconds: integer('CACHE_TTL_SECONDS', 60),
       }
     : { enabled: false },
+  // Object storage is only checked when its health URL is given.
+  storage: storageHealthUrl ? { enabled: true, healthUrl: storageHealthUrl } : { enabled: false },
 };
 
 // Same shape as config but without any secret: this is the only version
@@ -85,4 +99,5 @@ export const describeConfig = () => ({
         ttlSeconds: config.cache.ttlSeconds,
       }
     : { enabled: false },
+  storage: config.storage,
 });

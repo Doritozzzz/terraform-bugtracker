@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 .PHONY: help init fmt validate plan apply up up-all output stop start destroy recreate-db ps \
-        test-db kill-db start-db test-cache kill-cache start-cache status test demo dist
+        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage status test demo dist
 
 # Environment for the Terraform targets: dev (default) or prod, e.g. make up ENV=prod.
 ENV ?= dev
@@ -81,6 +81,12 @@ kill-cache: ## Stop Redis to watch the status change (ENV=prod)
 
 start-cache: ## Start Redis again (ENV=prod)
 	docker start $(PREFIX)-cache
+
+kill-storage: ## Stop MinIO: /static/ fails and the open page reports it (ENV=dev)
+	docker stop $(PREFIX)-storage
+
+start-storage: ## Start MinIO again (ENV=dev)
+	docker start $(PREFIX)-storage
 
 # ------------------------------------------------------------------ both
 

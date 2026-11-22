@@ -48,6 +48,8 @@ module "web" {
     POSTGRES_DB       = module.database.database
     POSTGRES_USER     = module.database.user
     POSTGRES_PASSWORD = module.database.password
+    # Only used to report whether the static files are being served.
+    STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
   }
 }
 

@@ -25,6 +25,7 @@ const SERVICES = [
   { key: 'web', name: 'Web application', kind: 'Express' },
   { key: 'database', name: 'PostgreSQL', kind: 'Database' },
   { key: 'cache', name: 'Redis', kind: 'Cache' },
+  { key: 'storage', name: 'MinIO', kind: 'Static files' },
 ];
 const SERVICE_STATE = { up: 'Operational', down: 'Unavailable', disabled: 'Disabled', unknown: 'Unknown' };
 
@@ -42,8 +43,8 @@ const state = {
   sort: { key: 'created_at', dir: 'desc' },
   reads: [],
   events: [],
-  services: { web: null, database: null, cache: null },
-  history: { web: [], database: [], cache: [] },
+  services: { web: null, database: null, cache: null, storage: null },
+  history: { web: [], database: [], cache: [], storage: [] },
   uptime: null,
   lastCheck: null,
   hits: [],
@@ -497,7 +498,7 @@ function renderServices() {
 }
 
 function renderHealth() {
-  const { web, database, cache } = state.services;
+  const { web, database, cache, storage } = state.services;
   if (!web) return;
 
   let dot = 'up';
@@ -505,6 +506,7 @@ function renderHealth() {
   if (web.state === 'down') [dot, text] = ['unknown', 'Server unreachable'];
   else if (database.state === 'down') [dot, text] = ['down', 'Database unavailable'];
   else if (cache.state === 'down') [dot, text] = ['warn', 'Cache unavailable (degraded)'];
+  else if (storage.state === 'down') [dot, text] = ['warn', 'Static files unavailable (degraded)'];
 
   $('#health-dot').className = `dot dot-${dot}`;
   $('#health-text').textContent = text;
@@ -663,7 +665,7 @@ function commit(next) {
 }
 
 function applyStatus(status, roundTrip) {
-  const { database, cache } = status.services;
+  const { database, cache, storage } = status.services;
   state.uptime = status.uptimeSeconds;
   if (status.instance) {
     state.hits.unshift(status.instance);
@@ -680,6 +682,7 @@ function applyStatus(status, roundTrip) {
     web: { state: 'up', latency: roundTrip },
     database: { state: database.status, latency: database.latencyMs ?? null },
     cache: { state: cache.status, latency: cache.latencyMs ?? null },
+    storage: { state: storage.status, latency: storage.latencyMs ?? null },
   });
 }
 
@@ -688,6 +691,7 @@ function applyOffline() {
     web: { state: 'down', latency: null },
     database: { state: 'unknown', latency: null },
     cache: { state: 'unknown', latency: null },
+    storage: { state: 'unknown', latency: null },
   });
 }
 

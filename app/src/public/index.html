@@ -11,12 +11,19 @@
   <script src="/static/app.js" defer></script>
 </head>
 <body data-loading>
+  <!-- Visible only if styles.css (served from object storage) fails to load:
+       the stylesheet hides it. Plain HTML, so it works without CSS or JS. -->
+  <p class="static-fallback" role="alert">
+    <strong>The page styles and scripts could not be loaded.</strong>
+    The static file storage (MinIO) is unavailable; the incident data is safe.
+    Reload the page in a moment.
+  </p>
   <a class="skip" href="#main">Skip to content</a>
 
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="#/overview">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h5l3-8 4 16 3-8h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h5l3-8 4 16 3-8h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Incident Tracker</span>
       </a>
       <span id="env-badge" class="tag c-neutral hide-sm">…</span>

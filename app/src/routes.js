@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { config } from './config.js';
 import * as cache from './cache.js';
 import * as db from './db.js';
+import * as storage from './storage.js';
 
 const router = Router();
 
@@ -50,12 +51,13 @@ async function probe(check) {
   return { up, latencyMs: elapsedMs(start) };
 }
 
-// Status: reports the state of the dependencies. Both checks run in parallel,
+// Status: reports the state of the dependencies. All checks run in parallel,
 // so the response time is bounded by the slowest one (2 s timeout each).
 async function statusHandler(req, res) {
-  const [database, redis] = await Promise.all([
+  const [database, redis, objects] = await Promise.all([
     probe(db.ping),
     cache.enabled ? probe(cache.ping) : null,
+    storage.enabled ? probe(storage.ping) : null,
   ]);
 
   const services = {
@@ -67,13 +69,17 @@ async function statusHandler(req, res) {
     cache: redis
       ? { type: 'Redis', status: redis.up ? 'up' : 'down', latencyMs: redis.latencyMs }
       : { type: 'Redis', status: 'disabled' },
+    storage: objects
+      ? { type: 'MinIO', status: objects.up ? 'up' : 'down', latencyMs: objects.latencyMs }
+      : { type: 'MinIO', status: 'disabled' },
   };
 
-  const degraded = !database.up || (redis !== null && !redis.up);
+  const degraded = !database.up || (redis !== null && !redis.up) || (objects !== null && !objects.up);
 
   res.set('Cache-Control', 'no-store');
   // Without the database the application cannot work (503). Without the cache
-  // it still works, reading from the database, so it answers 200 as "degraded".
+  // (reads go to the database) or the object storage (the API still works,
+  // only new page loads miss their styles) it answers 200 as "degraded".
   res.status(database.up ? 200 : 503).json({
     status: degraded ? 'degraded' : 'ok',
     instance: config.instance,
