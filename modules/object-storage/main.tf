@@ -119,8 +119,10 @@ resource "terraform_data" "source" {
 
 # One-shot container (same image, which also ships the mc client): creates the
 # bucket, applies the read-only policy and mirrors source_dir into it, so the
-# bucket ends up with exactly the files of the folder. It runs on creation and
-# again whenever the files, the bucket or the policy change.
+# bucket ends up with exactly the files of the folder. Every object gets a
+# Cache-Control header; without one, browsers guess how long to reuse a file
+# without asking. It runs on creation and again whenever the files, the
+# bucket, the policy or the header change.
 resource "docker_container" "init" {
   name  = "${var.name}-init"
   image = docker_image.minio.image_id
@@ -145,6 +147,7 @@ resource "docker_container" "init" {
     "MC_HOST_minio=http://${local.root_user}:${random_password.root.result}@${docker_container.minio.name}:${local.api_port}",
     "BUCKET=${var.bucket}",
     "POLICY=${local.read_policy}",
+    "CACHE_CONTROL=${var.cache_control}",
   ]
 
   entrypoint = ["bash", "-c"]
@@ -153,7 +156,10 @@ resource "docker_container" "init" {
     mc mb --ignore-existing "minio/$BUCKET"
     printf '%s' "$POLICY" > /tmp/policy.json
     mc anonymous set-json /tmp/policy.json "minio/$BUCKET"
-    mc mirror --overwrite --remove /source "minio/$BUCKET"
+    # cp uploads every file, so the header is applied even to unchanged files
+    # (mirror skips those); mirror --remove then deletes files no longer in the folder.
+    mc cp --recursive --attr "Cache-Control=$CACHE_CONTROL" /source/ "minio/$BUCKET"
+    mc mirror --remove /source "minio/$BUCKET"
   EOT
   ]
 

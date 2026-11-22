@@ -24,6 +24,12 @@ variable "source_dir" {
   type        = string
 }
 
+variable "cache_control" {
+  description = "Cache-Control header of every uploaded object. no-cache makes browsers revalidate (cheap 304) so changes show at once."
+  type        = string
+  default     = "no-cache"
+}
+
 variable "console_port" {
   description = "Port on 127.0.0.1 for the MinIO web console. Null keeps the console unpublished."
   type        = number

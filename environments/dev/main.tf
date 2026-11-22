@@ -78,6 +78,6 @@ module "storage" {
   name         = "${local.name_prefix}-storage"
   networks     = [docker_network.frontend.name, docker_network.app.name]
   bucket       = "static"
-  source_dir   = "${path.module}/../../app/src/public"
+  source_dir   = "${path.module}/../../static"
   console_port = var.storage_console_port
 }
