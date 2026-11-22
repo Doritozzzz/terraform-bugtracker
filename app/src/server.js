@@ -57,11 +57,17 @@ app.use((req, res, next) => {
 // bury the rest of the log.
 const QUIET_PATHS = new Set(['/live', '/status', '/health']);
 
+// ID the load balancer gives every request; the same value is in its access
+// log, so one search finds a request in both. Undefined (and left out of the
+// log line) when the app is called directly.
+const requestId = (req) => req.get('x-request-id');
+
 app.use((req, res, next) => {
   if (QUIET_PATHS.has(req.path)) return next();
   const start = performance.now();
   res.on('finish', () => {
     log.debug('request', {
+      requestId: requestId(req),
       method: req.method,
       path: req.path,
       status: res.statusCode,
@@ -108,7 +114,12 @@ app.use((error, req, res, next) => {
     return res.status(503).json({ error: 'database_unavailable' });
   }
 
-  log.error('request_failed', { method: req.method, path: req.path, reason: error.message });
+  log.error('request_failed', {
+    requestId: requestId(req),
+    method: req.method,
+    path: req.path,
+    reason: error.message,
+  });
   res.status(500).json({ error: 'internal_error' });
 });
 

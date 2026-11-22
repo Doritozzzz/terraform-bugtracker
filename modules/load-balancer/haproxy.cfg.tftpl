@@ -24,9 +24,21 @@ defaults
 
 frontend web
   bind :${listen_port}
-  # One line per request, including which replica served it.
+
+  # Every request gets a random ID (UUID v4). It replaces any X-Request-ID the
+  # client sent, is passed to the backend so its logs can include it, and is
+  # returned to the client. http-after-response also covers the errors
+  # HAProxy generates itself, such as a 503 when no replica is up.
+  unique-id-format %[uuid()]
+  http-request set-header X-Request-ID %[unique-id]
+  http-after-response set-header X-Request-ID %[unique-id]
+
+  # One JSON line per request, including which replica served it and the
+  # request ID, so the log platform can filter by any field without parsing.
+  # The doubled % before { is Terraform's template escape; HAProxy gets one.
   log global
-  option httplog
+  log-format "%%{+json}o %(time)[accept_date(ms),ms_utime('%Y-%m-%dT%H:%M:%S.%3NZ')] %(requestId)ID %(clientIp)ci %(method)HM %(uri)HU %(status)ST %(bytes)B %(backend)b %(server)s %(responseMs)Tr %(durationMs)Ta %(termination)ts"
+
   # Lets clients (and tests) see which replica answered.
   http-response set-header X-Served-By %[srv_name]
   # Path-based routing: a request whose path starts with a route prefix goes
