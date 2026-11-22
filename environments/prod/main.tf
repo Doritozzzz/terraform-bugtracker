@@ -32,6 +32,13 @@ resource "docker_network" "app" {
   internal = true
 }
 
+# Internal network for the monitoring stack, apart from the application
+# networks: the collectors and stores never reach the database or the web.
+resource "docker_network" "monitoring" {
+  name     = "${local.name_prefix}-monitoring"
+  internal = true
+}
+
 module "database" {
   source = "../../modules/database"
 
@@ -124,4 +131,30 @@ module "storage" {
   restart      = "unless-stopped"
   memory       = 256
   labels       = merge(local.labels, { service = "storage" })
+}
+
+# Central log store: every container log of this environment ends up here.
+module "log_store" {
+  source = "../../modules/log-store"
+
+  name     = "${local.name_prefix}-loki"
+  networks = [docker_network.monitoring.name]
+  restart  = "unless-stopped"
+  memory   = 256
+  labels   = merge(local.labels, { service = "log-store" })
+}
+
+# Ships the logs of this environment's containers (and only those) to Loki.
+module "log_collector" {
+  source = "../../modules/log-collector"
+
+  name             = "${local.name_prefix}-alloy"
+  networks         = [docker_network.monitoring.name]
+  push_url         = module.log_store.push_url
+  container_filter = local.labels
+  keep_labels      = ["environment", "service"]
+  restart          = "unless-stopped"
+  memory           = 128
+  proxy_memory     = 64
+  labels           = merge(local.labels, { service = "log-collector" })
 }

@@ -1,0 +1,45 @@
+# Single-process Loki that keeps its index and chunks on the local disk (/loki,
+# a named volume), the simplest mode for one host.
+
+# Without this, every request must carry a tenant ID (X-Scope-OrgID header).
+auth_enabled: false
+
+server:
+  http_listen_port: ${http_port}
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  # One instance: no replication and no ring shared with other instances.
+  replication_factor: 1
+  instance_addr: 127.0.0.1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    # Storage format used from this date on. Retention needs a 24h index period.
+    - from: 2026-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# By default Loki keeps logs forever. The compactor deletes chunks older than
+# retention_period.
+compactor:
+  retention_enabled: true
+  delete_request_store: filesystem
+
+limits_config:
+  retention_period: ${retention_hours}h
+
+# Do not send anonymous usage statistics to Grafana Labs.
+analytics:
+  reporting_enabled: false

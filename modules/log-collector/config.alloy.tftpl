@@ -1,0 +1,51 @@
+// Finds the containers that have every label in container_filter, through
+// the read-only Docker API proxy.
+discovery.docker "containers" {
+  host = "${docker_host}"
+
+  filter {
+    name   = "label"
+    values = ${jsonencode([for k, v in container_filter : "${k}=${v}"])}
+  }
+}
+
+// Labels every log stream gets in Loki. Kept to a few with a small number of
+// values, as Loki recommends; anything else is filtered at query time.
+discovery.relabel "containers" {
+  targets = []
+
+  // Docker reports names with a leading slash.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // stdout or stderr.
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+%{ for label in keep_labels ~}
+
+  rule {
+    source_labels = ["__meta_docker_container_label_${label}"]
+    target_label  = "${label}"
+  }
+%{ endfor ~}
+}
+
+// Follows the logs of each container through the Docker API, so it works
+// with any log driver that docker logs can read (such as local).
+loki.source.docker "containers" {
+  host          = "${docker_host}"
+  targets       = discovery.docker.containers.targets
+  relabel_rules = discovery.relabel.containers.rules
+  forward_to    = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "${push_url}"
+  }
+}
