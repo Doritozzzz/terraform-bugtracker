@@ -30,6 +30,17 @@ variable "init_script" {
   default     = null
 }
 
+variable "slow_query_ms" {
+  description = "Log every statement that takes longer than this many milliseconds (PostgreSQL log_min_duration_statement; 0 logs them all). Null keeps it off, the PostgreSQL default."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.slow_query_ms == null ? true : var.slow_query_ms >= 0 && floor(var.slow_query_ms) == var.slow_query_ms
+    error_message = "slow_query_ms must be a whole number, 0 or more."
+  }
+}
+
 variable "restart" {
   description = "Docker restart policy: no, on-failure, always or unless-stopped. Null keeps the Docker default (no)."
   type        = string

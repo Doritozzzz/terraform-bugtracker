@@ -63,6 +63,11 @@ resource "docker_container" "postgres" {
     "POSTGRES_PASSWORD=${random_password.this.result}",
   ]
 
+  # Null keeps the image command (postgres). Otherwise every statement slower
+  # than slow_query_ms is logged with its duration, which shows load or lock
+  # problems in the logs.
+  command = var.slow_query_ms == null ? null : ["postgres", "-c", "log_min_duration_statement=${var.slow_query_ms}"]
+
   networks_advanced {
     name = var.network
   }

@@ -36,7 +36,11 @@ module "database" {
   database    = "tracker"
   user        = "tracker"
   init_script = "${path.module}/../../db/init.sql"
-  labels      = merge(local.labels, { service = "database" })
+
+  # The slowest normal query (a search with no match over 50,000 rows) takes
+  # about 110 ms, so only real problems such as load or locks reach 500 ms.
+  slow_query_ms = 500
+  labels        = merge(local.labels, { service = "database" })
 }
 
 module "web" {
