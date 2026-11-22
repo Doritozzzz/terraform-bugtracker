@@ -83,3 +83,18 @@ module "load_balancer" {
   restart     = "unless-stopped"
   memory      = 128
 }
+
+# Shared storage for the static files of the web: one copy for every replica,
+# like S3 in the cloud. On the app network so the load balancer and the web
+# reach it, and on frontend so its console can be published.
+module "storage" {
+  source = "../../modules/object-storage"
+
+  name         = "${local.name_prefix}-storage"
+  networks     = [docker_network.frontend.name, docker_network.app.name]
+  bucket       = "static"
+  source_dir   = "${path.module}/../../app/src/public"
+  console_port = var.storage_console_port
+  restart      = "unless-stopped"
+  memory       = 256
+}
