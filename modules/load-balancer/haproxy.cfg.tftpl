@@ -1,6 +1,8 @@
 global
-  # Logs go to stdout so Docker (and the log collector) picks them up,
+  # Request logs go to stdout so Docker (and the log collector) picks them up,
   # instead of the default syslog socket that does not exist in a container.
+  # Events such as a server going DOWN are already printed once on stderr with
+  # their level, so only the frontend below uses this log.
   log stdout format raw local0
 
 # Docker's embedded DNS. Replicas get a new IP every time they are recreated;
@@ -10,9 +12,6 @@ resolvers docker
 
 defaults
   mode http
-  log global
-  # One line per request, including which replica served it.
-  option httplog
 
   # HAProxy has no default timeouts: without them a stuck connection stays open forever.
   timeout connect 5s
@@ -25,6 +24,9 @@ defaults
 
 frontend web
   bind :${listen_port}
+  # One line per request, including which replica served it.
+  log global
+  option httplog
   # Lets clients (and tests) see which replica answered.
   http-response set-header X-Served-By %[srv_name]
   # Path-based routing: a request whose path starts with a route prefix goes
