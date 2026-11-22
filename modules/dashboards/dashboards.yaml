@@ -1,0 +1,9 @@
+# Loads every dashboard JSON file in the mounted folder, and reloads it when a
+# file changes, without restarting Grafana. Provisioned dashboards cannot be
+# saved from the web UI: the files are the source of truth.
+apiVersion: 1
+
+providers:
+  - name: files
+    options:
+      path: /etc/grafana/dashboards

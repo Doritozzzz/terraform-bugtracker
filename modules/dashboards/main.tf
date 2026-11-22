@@ -78,7 +78,8 @@ resource "docker_container" "grafana" {
     "/tmp" = ""
   }
 
-  env = [
+  # The home dashboard, when one is given, is added at the end.
+  env = concat([
     "GF_SECURITY_ADMIN_PASSWORD=${random_password.admin.result}",
     # Logs only to stdout, as JSON like the other services. The default also
     # writes log files, which would fail on the read-only filesystem.
@@ -98,12 +99,26 @@ resource "docker_container" "grafana" {
     # On by default but deprecated: browsers removed the X-XSS-Protection
     # header, and Grafana itself recommends turning it off.
     "GF_SECURITY_X_XSS_PROTECTION=false",
-  ]
+  ], var.home_dashboard == null ? [] : ["GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/dashboards/${var.home_dashboard}"])
 
   volumes {
     host_path      = local_file.datasources.filename
     container_path = "/etc/grafana/provisioning/datasources/datasources.yaml"
     read_only      = true
+  }
+
+  # The dashboard files and the provider that loads them. Grafana watches the
+  # folder, so editing a dashboard does not need a new container.
+  dynamic "volumes" {
+    for_each = var.dashboards_dir == null ? {} : {
+      "/etc/grafana/provisioning/dashboards/dashboards.yaml" = abspath("${path.module}/dashboards.yaml")
+      "/etc/grafana/dashboards"                              = abspath(var.dashboards_dir)
+    }
+    content {
+      host_path      = volumes.value
+      container_path = volumes.key
+      read_only      = true
+    }
   }
 
   volumes {

@@ -219,6 +219,8 @@ module "dashboards" {
     { uid = "prometheus", name = "Prometheus", type = "prometheus", url = module.metrics_store.internal_url, default = true },
     { uid = "loki", name = "Loki", type = "loki", url = module.log_store.internal_url },
   ]
+  dashboards_dir = "${path.module}/../../monitoring/dashboards"
+  home_dashboard = "status.json"
 
   restart = "unless-stopped"
   memory  = 512

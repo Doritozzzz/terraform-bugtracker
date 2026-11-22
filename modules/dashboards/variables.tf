@@ -34,6 +34,23 @@ variable "datasources" {
   }
 }
 
+variable "dashboards_dir" {
+  description = "Optional folder with dashboard JSON files to provision. Null provisions none."
+  type        = string
+  default     = null
+}
+
+variable "home_dashboard" {
+  description = "Optional file name (inside dashboards_dir) of the dashboard shown as the home page."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.home_dashboard == null ? true : var.dashboards_dir != null
+    error_message = "home_dashboard needs dashboards_dir."
+  }
+}
+
 variable "image" {
   description = "Grafana image. Pinned to an exact version so every machine runs the same one."
   type        = string
