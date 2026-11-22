@@ -57,6 +57,15 @@ resource "docker_container" "minio" {
   # of 20 MB per container); docker logs and the Docker API still read it.
   log_driver = "local"
 
+  # Optional metadata, e.g. to tell environments and services apart in monitoring.
+  dynamic "labels" {
+    for_each = var.labels
+    content {
+      label = labels.key
+      value = labels.value
+    }
+  }
+
   # Hardening: read-only filesystem, no Linux capabilities and no privilege
   # escalation. The image already runs as an unprivileged user.
   read_only     = true

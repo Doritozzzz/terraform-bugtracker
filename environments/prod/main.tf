@@ -5,6 +5,13 @@
 locals {
   # Every name starts with "bugtracker-prod", so dev and prod never collide.
   name_prefix = "${var.project}-${var.environment}"
+
+  # Labels shared by every container; each module adds its service. The
+  # monitoring of this environment only collects containers with these labels.
+  labels = {
+    project     = var.project
+    environment = var.environment
+  }
 }
 
 # Network with access to the outside. Only containers that publish a port join it.
@@ -35,6 +42,7 @@ module "database" {
   init_script = "${path.module}/../../db/init.sql"
   restart     = "unless-stopped"
   memory      = 512
+  labels      = merge(local.labels, { service = "database" })
 }
 
 module "cache" {
@@ -44,6 +52,7 @@ module "cache" {
   network = docker_network.backend.name
   restart = "unless-stopped"
   memory  = 128
+  labels  = merge(local.labels, { service = "cache" })
 }
 
 module "web" {
@@ -56,6 +65,7 @@ module "web" {
   networks   = [docker_network.app.name, docker_network.backend.name]
   restart    = "unless-stopped"
   memory     = 256
+  labels     = merge(local.labels, { service = "web" })
 
   # PORT, REDIS_PORT and CACHE_TTL_SECONDS are omitted: the app defaults
   # (3000, 6379, 60 seconds) are the values used. log_level is not set in
@@ -85,6 +95,7 @@ module "load_balancer" {
   networks    = [docker_network.frontend.name, docker_network.app.name]
   restart     = "unless-stopped"
   memory      = 128
+  labels      = merge(local.labels, { service = "load-balancer" })
 
   # The bucket is served under its own name (/static/...), so no path rewrite is needed.
   routes = [{
@@ -108,4 +119,5 @@ module "storage" {
   console_port = var.storage_console_port
   restart      = "unless-stopped"
   memory       = 256
+  labels       = merge(local.labels, { service = "storage" })
 }

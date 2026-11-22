@@ -1,6 +1,13 @@
 locals {
   # Every name starts with "bugtracker-dev", so dev and prod never collide.
   name_prefix = "${var.project}-${var.environment}"
+
+  # Labels shared by every container; each module adds its service. The
+  # monitoring of this environment only collects containers with these labels.
+  labels = {
+    project     = var.project
+    environment = var.environment
+  }
 }
 
 # Network with access to the outside. Only containers that publish a port join it.
@@ -29,6 +36,7 @@ module "database" {
   database    = "tracker"
   user        = "tracker"
   init_script = "${path.module}/../../db/init.sql"
+  labels      = merge(local.labels, { service = "database" })
 }
 
 module "web" {
@@ -39,6 +47,7 @@ module "web" {
   replicas   = var.web_replicas
   port       = 3000
   networks   = [docker_network.app.name, docker_network.backend.name]
+  labels     = merge(local.labels, { service = "web" })
 
   # NODE_ENV, PORT and CACHE_ENABLED are omitted: the app defaults
   # (development, 3000, false) are already the dev values.
@@ -61,6 +70,7 @@ module "load_balancer" {
   health_path = "/live"
   port        = var.lb_port
   networks    = [docker_network.frontend.name, docker_network.app.name]
+  labels      = merge(local.labels, { service = "load-balancer" })
 
   # The bucket is served under its own name (/static/...), so no path rewrite is needed.
   routes = [{
@@ -82,4 +92,5 @@ module "storage" {
   bucket       = "static"
   source_dir   = "${path.module}/../../static"
   console_port = var.storage_console_port
+  labels       = merge(local.labels, { service = "storage" })
 }

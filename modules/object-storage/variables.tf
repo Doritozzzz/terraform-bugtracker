@@ -59,3 +59,9 @@ variable "memory" {
   type        = number
   default     = null
 }
+
+variable "labels" {
+  description = "Docker labels for the MinIO server container (not the one-shot upload), e.g. environment and service, used by monitoring to filter it."
+  type        = map(string)
+  default     = {}
+}

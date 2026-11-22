@@ -47,3 +47,9 @@ variable "memory" {
   type        = number
   default     = null
 }
+
+variable "labels" {
+  description = "Docker labels for the containers, e.g. environment and service, used by monitoring to filter them."
+  type        = map(string)
+  default     = {}
+}

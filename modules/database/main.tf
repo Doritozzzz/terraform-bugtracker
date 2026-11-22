@@ -34,6 +34,15 @@ resource "docker_container" "postgres" {
   # of 20 MB per container); docker logs and the Docker API still read it.
   log_driver = "local"
 
+  # Optional metadata, e.g. to tell environments and services apart in monitoring.
+  dynamic "labels" {
+    for_each = var.labels
+    content {
+      label = labels.key
+      value = labels.value
+    }
+  }
+
   # Hardening: unprivileged user, read-only filesystem, no Linux capabilities
   # and no privilege escalation.
   user          = "postgres"

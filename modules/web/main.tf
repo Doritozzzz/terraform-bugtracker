@@ -34,6 +34,15 @@ resource "docker_container" "this" {
   # of 20 MB per container); docker logs and the Docker API still read it.
   log_driver = "local"
 
+  # Optional metadata, e.g. to tell environments and services apart in monitoring.
+  dynamic "labels" {
+    for_each = var.labels
+    content {
+      label = labels.key
+      value = labels.value
+    }
+  }
+
   # Null values are skipped, so the caller can leave a variable to the app default.
   env = [for key, value in var.env : "${key}=${value}" if value != null]
 
