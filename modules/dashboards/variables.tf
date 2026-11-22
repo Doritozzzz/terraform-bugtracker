@@ -14,18 +14,24 @@ variable "port" {
 }
 
 variable "datasources" {
-  description = "Data sources to provision: uid (fixed ID for dashboards), display name, Grafana type (e.g. prometheus, loki), URL and whether it is the default one."
+  description = "Data sources to provision: uid (fixed ID for dashboards), display name, Grafana type (e.g. prometheus, loki), URL, whether it is the default one and, optionally, json_data: type-specific settings (Grafana's jsonData) as JSON text, e.g. jsonencode({...}). Grafana expands $VAR in provisioning files, so a literal $ must be written $$."
   type = list(object({
-    uid     = string
-    name    = string
-    type    = string
-    url     = string
-    default = optional(bool, false)
+    uid       = string
+    name      = string
+    type      = string
+    url       = string
+    default   = optional(bool, false)
+    json_data = optional(string)
   }))
 
   validation {
     condition     = length([for ds in var.datasources : ds if ds.default]) <= 1
     error_message = "At most one data source can be the default."
+  }
+
+  validation {
+    condition     = alltrue([for ds in var.datasources : ds.json_data == null ? true : can(jsondecode(ds.json_data))])
+    error_message = "json_data must be JSON text, e.g. jsonencode({...})."
   }
 
   validation {

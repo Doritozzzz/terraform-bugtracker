@@ -85,6 +85,10 @@ resource "docker_container" "grafana" {
     # writes log files, which would fail on the read-only filesystem.
     "GF_LOG_MODE=console",
     "GF_LOG_CONSOLE_FORMAT=json",
+    # At the default info level Grafana logs a line for every query of every
+    # panel (about 160 lines a minute with a dashboard open); warn keeps
+    # problems only.
+    "GF_LOG_LEVEL=warn",
     # Grafana 13.3 warns about an empty search manifest list on every poll,
     # forever (grafana/grafana#137058, moved to debug in 13.4).
     "GF_LOG_FILTERS=search-manifest-watcher:error",

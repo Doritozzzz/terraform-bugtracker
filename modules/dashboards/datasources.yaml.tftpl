@@ -15,4 +15,7 @@ datasources:
 %{ if ds.default ~}
     isDefault: true
 %{ endif ~}
+%{ if ds.json_data != null ~}
+    jsonData: ${ds.json_data}
+%{ endif ~}
 %{ endfor ~}

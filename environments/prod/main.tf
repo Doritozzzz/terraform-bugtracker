@@ -217,7 +217,24 @@ module "dashboards" {
 
   datasources = [
     { uid = "prometheus", name = "Prometheus", type = "prometheus", url = module.metrics_store.internal_url, default = true },
-    { uid = "loki", name = "Loki", type = "loki", url = module.log_store.internal_url },
+    {
+      uid  = "loki"
+      name = "Loki"
+      type = "loki"
+      url  = module.log_store.internal_url
+      json_data = jsonencode({
+        # Turns the request ID of a log line into a link that searches every
+        # log line of that request (load balancer and replica). "$$$" writes a
+        # literal "$$" in the file, which Grafana reads as one "$".
+        derivedFields = [{
+          name            = "requestId"
+          matcherRegex    = "\"requestId\": ?\"([0-9a-f-]{36})\""
+          datasourceUid   = "loki"
+          url             = "{environment=~\".+\"} |= \"$$${__value.raw}\""
+          urlDisplayLabel = "All log lines of this request"
+        }]
+      })
+    },
   ]
   dashboards_dir = "${path.module}/../../monitoring/dashboards"
   home_dashboard = "status.json"

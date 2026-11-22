@@ -1,7 +1,7 @@
 {
   "uid": "status",
   "title": "Bugtracker status",
-  "description": "Is the bugtracker working for its users and, if not, why? Top: what users experience. Below: each part, the load balancer and the resources.",
+  "description": "Is the bugtracker working for its users and, if not, why? Top: what users experience. Below: each part, the load balancer and the resources. Click a service tile for its logs.",
   "tags": [
     "bugtracker"
   ],
@@ -13,6 +13,18 @@
   },
   "refresh": "15s",
   "schemaVersion": 42,
+  "links": [
+    {
+      "title": "Dashboards",
+      "type": "dashboards",
+      "tags": [
+        "bugtracker"
+      ],
+      "asDropdown": false,
+      "keepTime": true,
+      "includeVars": false
+    }
+  ],
   "templating": {
     "list": [
       {
@@ -616,6 +628,12 @@
           "color": {
             "mode": "thresholds"
           },
+          "links": [
+            {
+              "title": "Logs of the web",
+              "url": "/d/logs/bugtracker-logs?var-service=web&${__url_time_range}"
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -697,6 +715,12 @@
           "color": {
             "mode": "thresholds"
           },
+          "links": [
+            {
+              "title": "Logs of ${__field.labels.dependency}",
+              "url": "/d/logs/bugtracker-logs?var-service=${__field.labels.dependency}&${__url_time_range}"
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -778,6 +802,12 @@
           "color": {
             "mode": "thresholds"
           },
+          "links": [
+            {
+              "title": "Logs of the load balancer",
+              "url": "/d/logs/bugtracker-logs?var-service=load-balancer&${__url_time_range}"
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [

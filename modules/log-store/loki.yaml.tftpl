@@ -6,6 +6,10 @@ auth_enabled: false
 
 server:
   http_listen_port: ${http_port}
+  # At the default info level Loki logs a long line with statistics for every
+  # query it serves, so looking at the logs would bury them in its own; warn
+  # keeps problems only.
+  log_level: warn
 
 common:
   path_prefix: /loki
