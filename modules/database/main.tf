@@ -29,6 +29,11 @@ resource "docker_container" "postgres" {
   memory      = var.memory
   memory_swap = var.memory
 
+  # Docker's default json-file driver never rotates, so logs grow until the
+  # disk is full. The local driver rotates and compresses by default (5 files
+  # of 20 MB per container); docker logs and the Docker API still read it.
+  log_driver = "local"
+
   # Hardening: unprivileged user, read-only filesystem, no Linux capabilities
   # and no privilege escalation.
   user          = "postgres"

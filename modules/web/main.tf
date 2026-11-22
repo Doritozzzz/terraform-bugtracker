@@ -29,6 +29,11 @@ resource "docker_container" "this" {
   memory      = var.memory
   memory_swap = var.memory
 
+  # Docker's default json-file driver never rotates, so logs grow until the
+  # disk is full. The local driver rotates and compresses by default (5 files
+  # of 20 MB per container); docker logs and the Docker API still read it.
+  log_driver = "local"
+
   env = [for key, value in var.env : "${key}=${value}"]
 
   # Hardening: no Linux capabilities and no privilege escalation. The
