@@ -20,10 +20,13 @@ resource "docker_volume" "data" {
 resource "local_file" "config" {
   filename = abspath("${path.root}/.generated/${var.name}.yml")
   content = templatefile("${path.module}/alertmanager.yml.tftpl", {
-    email = var.email
+    email    = var.email
+    telegram = var.telegram
   })
 
-  # The provider default is 0777 (writable by anyone).
+  # The provider default is 0777 (writable by anyone). It must stay readable by
+  # the nobody user of the container; with a Telegram receiver it holds the bot
+  # token, so it lives in the ignored .generated folder, like the state.
   file_permission      = "0644"
   directory_permission = "0755"
 }

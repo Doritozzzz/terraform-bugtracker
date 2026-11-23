@@ -39,3 +39,12 @@ receivers:
         html: ""
         text: '{{ template "bugtracker.text" . }}'
 %{ endif ~}
+%{ if telegram != null ~}
+    # Resolved alerts are notified by default here.
+    telegram_configs:
+      - bot_token: ${jsonencode(telegram.bot_token)}
+        chat_id: ${telegram.chat_id}
+        # Plain text (the default, HTML, would need every < and & escaped).
+        parse_mode: ""
+        message: '{{ template "bugtracker.subject" . }}{{ "\n\n" }}{{ template "bugtracker.text" . }}'
+%{ endif ~}

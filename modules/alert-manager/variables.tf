@@ -24,6 +24,16 @@ variable "email" {
   default = null
 }
 
+variable "telegram" {
+  description = "Optional Telegram receiver: bot token (from @BotFather) and the chat ID it writes to."
+  type = object({
+    bot_token = string
+    chat_id   = number
+  })
+  default   = null
+  sensitive = true
+}
+
 variable "dashboard_url" {
   description = "Optional base URL of Grafana. Alerts with a dashboard annotation (a path) get a full link to it in their notifications."
   type        = string

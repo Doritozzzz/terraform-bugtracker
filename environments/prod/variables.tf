@@ -49,3 +49,23 @@ variable "mail_port" {
   description = "Port on 127.0.0.1 where the test mailbox (Mailpit) is served."
   type        = number
 }
+
+# Secrets: set them in secrets.auto.tfvars (ignored by git, see the .example
+# file). Without them alerts are only emailed.
+variable "telegram_bot_token" {
+  description = "Token of the Telegram bot that sends the alerts (from @BotFather)."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "telegram_chat_id" {
+  description = "ID of the Telegram chat the bot writes to."
+  type        = number
+  default     = null
+
+  validation {
+    condition     = (var.telegram_chat_id == null) == (var.telegram_bot_token == null)
+    error_message = "Set both telegram_bot_token and telegram_chat_id, or neither."
+  }
+}

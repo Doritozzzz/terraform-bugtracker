@@ -278,6 +278,11 @@ module "alert_manager" {
     from      = "alertmanager@${local.name_prefix}.local"
     to        = "oncall@${local.name_prefix}.local"
   }
+  # Only when the bot is configured in secrets.auto.tfvars.
+  telegram = var.telegram_bot_token == null ? null : {
+    bot_token = var.telegram_bot_token
+    chat_id   = var.telegram_chat_id
+  }
   dashboard_url = module.dashboards.url
 
   restart = "unless-stopped"
