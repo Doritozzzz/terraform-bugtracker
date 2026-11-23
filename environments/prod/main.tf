@@ -96,7 +96,9 @@ module "web" {
     # Only used to report whether the static files are being served.
     STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
     # Links shown in the System view; the app never calls them.
-    GRAFANA_URL = module.dashboards.url
+    GRAFANA_URL      = module.dashboards.url
+    ALERTMANAGER_URL = module.alert_manager.url
+    MAIL_URL         = module.mail_catcher.url
   }
 }
 

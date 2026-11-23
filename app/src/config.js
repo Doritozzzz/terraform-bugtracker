@@ -53,7 +53,12 @@ const storageHealthUrl = url('STORAGE_HEALTH_URL');
 // Optional browser links to the monitoring tools of this environment, shown
 // in the System view. Only links: the app never calls them.
 const monitoring = Object.fromEntries(
-  Object.entries({ grafana: url('GRAFANA_URL'), prometheus: url('PROMETHEUS_URL') }).filter(([, value]) => value),
+  Object.entries({
+    grafana: url('GRAFANA_URL'),
+    prometheus: url('PROMETHEUS_URL'),
+    alertmanager: url('ALERTMANAGER_URL'),
+    mail: url('MAIL_URL'),
+  }).filter(([, value]) => value),
 );
 
 export const config = {

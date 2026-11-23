@@ -541,6 +541,12 @@ function renderMonitoring(links, services) {
   if (links.prometheus) {
     items.push(monitoringLink(links.prometheus, 'Prometheus', 'Raw metrics and the state of every scrape target'));
   }
+  if (links.alertmanager) {
+    items.push(monitoringLink(links.alertmanager, 'Alertmanager', 'Alerts being notified, and silencing them'));
+  }
+  if (links.mail) {
+    items.push(monitoringLink(links.mail, 'Alert mailbox', 'Test inbox with the alert emails (Mailpit)'));
+  }
   $('#monitoring-links').replaceChildren(...items);
   $('#monitoring').hidden = items.length === 0;
 }
