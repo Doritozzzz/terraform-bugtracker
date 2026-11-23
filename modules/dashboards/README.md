@@ -38,7 +38,7 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 
 | Name | Version |
 | ---- | ------- |
-| terraform | >= 1.6 |
+| terraform | >= 1.9 |
 | docker | >= 4.7 |
 | local | >= 2.9 |
 | random | >= 3.9 |

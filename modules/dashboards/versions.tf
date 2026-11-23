@@ -1,5 +1,6 @@
 terraform {
-  required_version = ">= 1.6"
+  # 1.9: the home_dashboard validation also checks dashboards_dir.
+  required_version = ">= 1.9"
 
   # A reusable module only sets minimum versions; the project using it pins
   # the exact ones in its own .terraform.lock.hcl.

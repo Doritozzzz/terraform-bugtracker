@@ -1,7 +1,7 @@
 # IT Incident Tracker — Infrastructure as Code with Terraform
 
 <p align="left">
-  <img src="https://img.shields.io/badge/Terraform-≥1.6-844FBA?style=for-the-badge&logo=terraform&logoColor=white" alt="Terraform" />
+  <img src="https://img.shields.io/badge/Terraform-≥1.9-844FBA?style=for-the-badge&logo=terraform&logoColor=white" alt="Terraform" />
   <img src="https://img.shields.io/badge/Docker_provider-4.7-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker provider" />
   <img src="https://img.shields.io/badge/HAProxy-3.4_LTS-106DA9?style=for-the-badge&logo=haproxy&logoColor=white" alt="HAProxy" />
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
@@ -95,7 +95,7 @@ All settings live in each environment's `terraform.tfvars` (versioned, no secret
 ## 3. Quick Start
 
 ### Prerequisites
-- Docker Engine (tested with 29.10) and **Terraform ≥ 1.6** (tested with 1.17)
+- Docker Engine (tested with 29.10) and **Terraform ≥ 1.9** (tested with 1.9.0 and 1.17)
 - `make`, `curl`, `bash`; `python3` for the test suite
 
 ### Deploy and open
