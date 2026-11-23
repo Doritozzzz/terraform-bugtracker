@@ -178,6 +178,9 @@ the tables are generated from the code with [terraform-docs](https://terraform-d
   replica back in rotation at once. `leastconn` only pays off with long connections.
 - **Active health checks** on `/live` every 2 s (HTTP/1.1): a replica that stops answering leaves the rotation
   before users hit it. `/live` does not depend on the database, so a database outage does not empty the pool.
+- **Passive checks on real traffic:** the first failed connection to a replica takes it out at once, and a 1 s
+  connect timeout retries that request on another replica. Measured when a replica stops: before, 3 requests
+  waited 5 s each; now a single request waits 1 s, and none fails.
 - **HA in prod:** 3 replicas, `restart: unless-stopped` and memory limits on every container. With one replica
   stopped, 30 requests in a row all succeed; a crashed replica (`kill -9`) is restarted by Docker
   (see the test results). The load balancer itself is a single container: in the cloud it would be a managed,

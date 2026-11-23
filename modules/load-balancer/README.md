@@ -1,6 +1,6 @@
 # HAProxy load balancer
 
-Runs HAProxy in front of a list of backends, with active health checks, optional path routes to other backends, a request ID for every request, a JSON access log and a Prometheus metrics port.
+Runs HAProxy in front of a list of backends, with active health checks (plus passive ones on real traffic), optional path routes to other backends, a request ID for every request, a JSON access log and a Prometheus metrics port.
 
 ## Usage
 

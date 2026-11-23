@@ -14,13 +14,21 @@ defaults
   mode http
 
   # HAProxy has no default timeouts: without them a stuck connection stays open forever.
-  timeout connect 5s
+  # Connect: inside the Docker network a live server accepts in well under a
+  # millisecond, so 1s only expires when the server is gone, and the request
+  # is then retried on another one. The 4-5s the manual suggests covers packet
+  # loss on real networks; here it made every request sent to a stopped
+  # replica wait 5s (measured).
+  timeout connect 1s
   timeout client 30s
   timeout server 30s
 
   # Every server is health checked and resolved through Docker's DNS.
   # init-addr none lets HAProxy start even if a replica does not exist yet.
-  default-server check resolvers docker init-addr none
+  # observe layer4 also watches real traffic: the first failed connection
+  # marks the server down at once, instead of users being sent to it until
+  # three health checks fail (up to 6s).
+  default-server check resolvers docker init-addr none observe layer4 error-limit 1 on-error mark-down
 
 frontend web
   bind :${listen_port}
