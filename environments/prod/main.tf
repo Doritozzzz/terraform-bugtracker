@@ -26,14 +26,18 @@ resource "docker_network" "backend" {
 }
 
 # Internal network between the load balancer and the web replicas, so the
-# load balancer never reaches the database.
+# load balancer never reaches the database. Prometheus joins it too, to read
+# their metrics. It is the only network the load balancer and the replicas
+# share: with two in common, Docker's DNS would answer either address and
+# user traffic would also flow through the monitoring network.
 resource "docker_network" "app" {
   name     = "${local.name_prefix}-app"
   internal = true
 }
 
 # Internal network for the monitoring stack, apart from the application
-# networks: the collectors and stores never reach the database or the web.
+# networks: the collectors, Loki, Grafana and Alertmanager never reach the
+# database or the web.
 resource "docker_network" "monitoring" {
   name     = "${local.name_prefix}-monitoring"
   internal = true
@@ -74,8 +78,8 @@ module "web" {
   replicas     = var.web_replicas
   port         = 3000
   metrics_port = 9464
-  # monitoring lets Prometheus read the metrics port, which the load balancer never forwards.
-  networks = [docker_network.app.name, docker_network.backend.name, docker_network.monitoring.name]
+  # Prometheus reads the metrics port over app; the load balancer never forwards it.
+  networks = [docker_network.app.name, docker_network.backend.name]
   restart  = "unless-stopped"
   memory   = 256
   labels   = merge(local.labels, { service = "web" })
@@ -109,9 +113,9 @@ module "load_balancer" {
   backends    = module.web.backends
   health_path = "/live"
   port        = var.lb_port
-  # frontend publishes the app, app reaches the replicas and storage, and
-  # monitoring lets Prometheus read the metrics port (never published).
-  networks = [docker_network.frontend.name, docker_network.app.name, docker_network.monitoring.name]
+  # frontend publishes the app; app reaches the replicas and storage, and lets
+  # Prometheus read the metrics port (never published).
+  networks = [docker_network.frontend.name, docker_network.app.name]
   restart  = "unless-stopped"
   memory   = 128
   labels   = merge(local.labels, { service = "load-balancer" })
@@ -184,8 +188,9 @@ module "container_metrics" {
 module "metrics_store" {
   source = "../../modules/metrics-store"
 
-  name     = "${local.name_prefix}-prometheus"
-  networks = [docker_network.monitoring.name]
+  name = "${local.name_prefix}-prometheus"
+  # app to scrape the load balancer and the replicas.
+  networks = [docker_network.monitoring.name, docker_network.app.name]
 
   scrape_jobs = [
     {
