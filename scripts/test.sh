@@ -20,6 +20,9 @@ pass=0
 fail=0
 START=$(date +%s)
 
+printf 'Verification run: %s UTC\n' "$(date -u '+%Y-%m-%d %H:%M:%S')"
+printf 'Docker %s, %s\n' "$(docker version -f '{{.Server.Version}}')" "$(terraform version | head -n 1)"
+
 # ----------------------------------------------------------------- helpers
 
 ok()      { printf 'PASS  %s\n' "$1"; pass=$((pass + 1)); }

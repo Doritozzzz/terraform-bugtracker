@@ -1,0 +1,99 @@
+Verification run: 2026-11-23 07:36:12 UTC
+Docker 29.10.0, Terraform v1.17.2
+
+== 1. Code checks (no containers needed) ==
+PASS  terraform fmt: every file is formatted
+PASS  terraform validate (dev)
+PASS  terraform validate (prod)
+PASS  alerting rules are valid and their unit tests pass (promtool)
+PASS  no state, plan or secret file is versioned
+
+== 2. Deploy ==
+PASS  make up-all brings up dev and prod
+INFO  deploy took 28 s
+PASS  a second plan of dev has nothing to change (code 0) [0]
+PASS  a second plan of prod has nothing to change (code 0) [0]
+PASS  dev: all 11 containers running [11]
+PASS  dev: no container is unhealthy [0]
+PASS  prod: all 15 containers running [15]
+PASS  prod: no container is unhealthy [0]
+
+== 3. Application and load balancing ==
+PASS  dev: the page answers through the load balancer [200]
+PASS  dev: /status reports ok [ok]
+PASS  prod: the page answers through the load balancer [200]
+PASS  prod: /status reports ok [ok]
+PASS  dev runs in development mode [development]
+PASS  prod runs in production mode [production]
+PASS  dev: requests alternate between its 2 replicas [2]
+PASS  prod: requests alternate between its 3 replicas [3]
+PASS  the page names the replica that served it (Server-Timing header)
+PASS  a valid new incident is created [201]
+PASS  an invalid incident is rejected [400]
+PASS  the seeded data is there (dev) [50006]
+
+== 4. Cache (prod) and static files (MinIO) ==
+PASS  dev has the cache disabled [disabled]
+PASS  prod: first read after a write is a cache MISS [MISS]
+PASS  prod: the next read is a cache HIT [HIT]
+PASS  dev: static files are served from the bucket [200]
+PASS  dev: static files are revalidated (Cache-Control: no-cache) [no-cache]
+PASS  dev: anonymous users cannot list the bucket [403]
+PASS  dev: anonymous users cannot upload [403]
+PASS  prod: static files are served from the bucket [200]
+PASS  prod: static files are revalidated (Cache-Control: no-cache) [no-cache]
+PASS  prod: anonymous users cannot list the bucket [403]
+PASS  prod: anonymous users cannot upload [403]
+PASS  prod: MinIO publishes no port (no admin console) []
+
+== 5. Hardening ==
+PASS  every published port listens on 127.0.0.1 only [0]
+PASS  every container has a read-only root filesystem [0]
+PASS  every container drops all capabilities and blocks privilege escalation [0]
+PASS  no container runs as root (except the Docker API proxy and cAdvisor) []
+PASS  /metrics is not reachable through the load balancer [404]
+
+== 6. High availability (prod) ==
+PASS  with one replica stopped, 30 requests in a row all succeed [30]
+PASS  the stopped replica comes back healthy
+PASS  a crashed replica is restarted by Docker (restart policy)
+PASS  and is healthy again
+
+== 7. Persistence ==
+PASS  the database container can be replaced (make recreate-db)
+PASS  the replaced database is healthy
+PASS  every row survives the replacement (named volume) [50009]
+
+== 8. Logs and metrics ==
+PASS  the load balancer gives every request a UUID
+PASS  with no replica up, the load balancer answers 503 [503]
+PASS  and that 503 also carries a request ID
+PASS  the same request ID is in the load balancer and replica logs (Loki)
+PASS  a client-supplied request ID is replaced [0]
+PASS  a slow query (>500 ms) is logged by PostgreSQL and reaches Loki
+PASS  dev: Loki only holds logs of its own environment [['dev']]
+PASS  dev: every Prometheus target is up [[]]
+PASS  dev: container metrics only cover its own environment [['dev']]
+PASS  dev: Grafana's prometheus data source works [OK]
+PASS  dev: Grafana's loki data source works [OK]
+PASS  dev: both dashboards are provisioned [2]
+PASS  prod: Loki only holds logs of its own environment [['prod']]
+PASS  prod: every Prometheus target is up [[]]
+PASS  prod: container metrics only cover its own environment [['prod']]
+PASS  prod: Grafana's prometheus data source works [OK]
+PASS  prod: Grafana's loki data source works [OK]
+PASS  prod: both dashboards are provisioned [2]
+INFO  prod p99 latency of the last 5 minutes: 39.0 ms
+
+== 9. Alerts (prod) ==
+PASS  Prometheus loaded the 11 alerting rules [11]
+PASS  no alert fires while everything is healthy [[]]
+PASS  a stopped replica fires WebReplicaDown
+PASS  and its email reaches the mailbox
+INFO  alert email received 70 s after the replica stopped
+PASS  when it comes back, the resolved email arrives
+INFO  mailbox: [RESOLVED] WebReplicaDown (prod) | [FIRING:1] WebReplicaDown (prod)
+PASS  Telegram notifications sent without failures [0]
+INFO  Telegram notifications sent by this Alertmanager: 8
+
+72 passed, 0 failed (280 s)
