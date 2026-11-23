@@ -13,6 +13,14 @@ global:
 rule_files:
   - /etc/prometheus/rules/*.rules.yml
 %{ endif ~}
+%{ if length(alertmanagers) > 0 ~}
+
+# Where firing alerts are sent, to be grouped and notified.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ${jsonencode(alertmanagers)}
+%{ endif ~}
 
 scrape_configs:
   # Prometheus's own health and storage.

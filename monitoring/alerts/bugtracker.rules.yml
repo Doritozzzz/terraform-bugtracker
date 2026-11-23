@@ -156,7 +156,7 @@ groups:
   - name: monitoring
     rules:
       - alert: MonitoringTargetDown
-        expr: up{job=~"loki|alloy|cadvisor"} == 0
+        expr: up{job=~"loki|alloy|cadvisor|alertmanager"} == 0
         for: 2m
         labels:
           severity: warning
@@ -164,6 +164,6 @@ groups:
         annotations:
           summary: "{{ $labels.job }} does not answer"
           description: >-
-            Logs or container metrics are no longer being collected, so dashboards and
-            alerts miss data. Check whether its container is running.
+            Logs or container metrics are no longer collected, or alerts no longer
+            notified, so problems can go unseen. Check whether its container is running.
           dashboard: /d/status/bugtracker-status

@@ -1026,7 +1026,7 @@
     {
       "type": "stat",
       "title": "Monitoring",
-      "description": "Whether Prometheus can scrape the log store (Loki), the log collector (Alloy) and the container metrics (cAdvisor).",
+      "description": "Whether Prometheus can scrape the log store (Loki), the log collector (Alloy), the container metrics (cAdvisor) and, in prod, the alert notifier (Alertmanager).",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1038,7 +1038,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "up{job=~\"loki|alloy|cadvisor\"}",
+          "expr": "up{job=~\"loki|alloy|cadvisor|alertmanager\"}",
           "legendFormat": "{{job}}",
           "instant": true,
           "range": false

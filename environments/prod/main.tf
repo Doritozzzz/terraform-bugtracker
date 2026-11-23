@@ -201,9 +201,11 @@ module "metrics_store" {
     { name = "haproxy", targets = [module.load_balancer.metrics_target] },
     { name = "loki", targets = [module.log_store.metrics_target] },
     { name = "alloy", targets = [module.log_collector.metrics_target] },
+    { name = "alertmanager", targets = [module.alert_manager.target] },
   ]
   rules_dir       = "${path.module}/../../monitoring/alerts"
   external_labels = local.labels
+  alertmanagers   = [module.alert_manager.target]
 
   restart = "unless-stopped"
   memory  = 256
@@ -246,4 +248,39 @@ module "dashboards" {
   restart = "unless-stopped"
   memory  = 512
   labels  = merge(local.labels, { service = "dashboards" })
+}
+
+# Test mail server: receives the alert emails and shows them in a web UI.
+module "mail_catcher" {
+  source = "../../modules/mail-catcher"
+
+  name = "${local.name_prefix}-mailpit"
+  # frontend only to publish its web UI on the host.
+  networks = [docker_network.monitoring.name, docker_network.frontend.name]
+  port     = var.mail_port
+  restart  = "unless-stopped"
+  memory   = 64
+  labels   = merge(local.labels, { service = "mail-catcher" })
+}
+
+# Groups the alerts of Prometheus and notifies them. Only prod notifies; dev
+# evaluates the same rules without sending anything.
+module "alert_manager" {
+  source = "../../modules/alert-manager"
+
+  name = "${local.name_prefix}-alertmanager"
+  # frontend only to publish its web UI, where alerts can be listed and silenced.
+  networks = [docker_network.monitoring.name, docker_network.frontend.name]
+  port     = var.alertmanager_port
+
+  email = {
+    smarthost = module.mail_catcher.smtp_address
+    from      = "alertmanager@${local.name_prefix}.local"
+    to        = "oncall@${local.name_prefix}.local"
+  }
+  dashboard_url = module.dashboards.url
+
+  restart = "unless-stopped"
+  memory  = 64
+  labels  = merge(local.labels, { service = "alert-manager" })
 }

@@ -1,0 +1,41 @@
+# Receives the alerts of Prometheus, groups them, drops the ones a more
+# serious alert already covers and sends the notifications.
+
+templates:
+  - /etc/alertmanager/notification.tmpl
+
+route:
+  receiver: notifications
+  # One notification per alert name and service: three replicas down arrive
+  # as one message listing the three.
+  group_by: [alertname, service]
+  # The defaults are 30s and 5m; shorter, so a new problem is notified within
+  # seconds and a change in a group within a minute. Reminders stay at the
+  # default of every 4 hours.
+  group_wait: 10s
+  group_interval: 1m
+
+# A critical alert of a service makes its warnings redundant, e.g. "only one
+# web replica left" already says that replicas are down.
+inhibit_rules:
+  - source_matchers: [severity="critical"]
+    target_matchers: [severity="warning"]
+    equal: [service]
+
+receivers:
+  - name: notifications
+%{ if email != null ~}
+    email_configs:
+      - to: ${email.to}
+        from: ${email.from}
+        smarthost: ${email.smarthost}
+        # The test SMTP server has no TLS (the default requires it).
+        require_tls: false
+        # Email only notifies resolved alerts if told to.
+        send_resolved: true
+        headers:
+          Subject: '{{ template "bugtracker.subject" . }}'
+        # Plain text, the same text as every other receiver.
+        html: ""
+        text: '{{ template "bugtracker.text" . }}'
+%{ endif ~}

@@ -39,3 +39,13 @@ variable "grafana_port" {
   description = "Port on 127.0.0.1 where Grafana is served."
   type        = number
 }
+
+variable "alertmanager_port" {
+  description = "Port on 127.0.0.1 where the Alertmanager web UI is served."
+  type        = number
+}
+
+variable "mail_port" {
+  description = "Port on 127.0.0.1 where the test mailbox (Mailpit) is served."
+  type        = number
+}

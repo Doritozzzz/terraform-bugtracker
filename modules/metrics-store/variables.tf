@@ -37,6 +37,12 @@ variable "external_labels" {
   default     = {}
 }
 
+variable "alertmanagers" {
+  description = "Alertmanagers (host:port) that receive the firing alerts. Empty: rules are evaluated but nobody is notified."
+  type        = list(string)
+  default     = []
+}
+
 variable "port" {
   description = "Port on 127.0.0.1 for the Prometheus web UI. Null keeps it unpublished."
   type        = number

@@ -24,6 +24,7 @@ resource "local_file" "config" {
     scrape_jobs     = var.scrape_jobs
     external_labels = var.external_labels
     rules           = var.rules_dir != null
+    alertmanagers   = var.alertmanagers
   })
 
   # The provider default is 0777 (writable by anyone).
