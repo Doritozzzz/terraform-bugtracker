@@ -97,8 +97,13 @@ for env in dev prod; do
   check "terraform validate ($env)" terraform -chdir="environments/$env" validate -no-color
 done
 check "alerting rules are valid and their unit tests pass (promtool)" mk test-alerts
-check "no state, plan or secret file is versioned" \
-  sh -c '! git ls-files | grep -E "tfstate|tfplan|secrets\.auto\.tfvars$|\.generated/"'
+# Only meaningful in a git checkout; the submission zip has no history.
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  check "no state, plan or secret file is versioned" \
+    sh -c '! git ls-files | grep -E "tfstate|tfplan|secrets\.auto\.tfvars$|\.generated/"'
+else
+  info "not a git checkout (e.g. the submission zip): versioned files not checked"
+fi
 
 # -------------------------------------------------------------- 2. deploy
 

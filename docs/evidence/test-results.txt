@@ -1,4 +1,4 @@
-Verification run: 2026-11-23 07:36:12 UTC
+Verification run: 2026-11-23 08:13:36 UTC
 Docker 29.10.0, Terraform v1.17.2
 
 == 1. Code checks (no containers needed) ==
@@ -10,7 +10,7 @@ PASS  no state, plan or secret file is versioned
 
 == 2. Deploy ==
 PASS  make up-all brings up dev and prod
-INFO  deploy took 28 s
+INFO  deploy took 24 s
 PASS  a second plan of dev has nothing to change (code 0) [0]
 PASS  a second plan of prod has nothing to change (code 0) [0]
 PASS  dev: all 11 containers running [11]
@@ -62,7 +62,7 @@ PASS  and is healthy again
 == 7. Persistence ==
 PASS  the database container can be replaced (make recreate-db)
 PASS  the replaced database is healthy
-PASS  every row survives the replacement (named volume) [50009]
+PASS  every row survives the replacement (named volume) [50007]
 
 == 8. Logs and metrics ==
 PASS  the load balancer gives every request a UUID
@@ -83,17 +83,17 @@ PASS  prod: container metrics only cover its own environment [['prod']]
 PASS  prod: Grafana's prometheus data source works [OK]
 PASS  prod: Grafana's loki data source works [OK]
 PASS  prod: both dashboards are provisioned [2]
-INFO  prod p99 latency of the last 5 minutes: 39.0 ms
+INFO  prod p99 latency of the last 5 minutes: 45.5 ms
 
 == 9. Alerts (prod) ==
 PASS  Prometheus loaded the 11 alerting rules [11]
 PASS  no alert fires while everything is healthy [[]]
 PASS  a stopped replica fires WebReplicaDown
 PASS  and its email reaches the mailbox
-INFO  alert email received 70 s after the replica stopped
+INFO  alert email received 58 s after the replica stopped
 PASS  when it comes back, the resolved email arrives
 INFO  mailbox: [RESOLVED] WebReplicaDown (prod) | [FIRING:1] WebReplicaDown (prod)
 PASS  Telegram notifications sent without failures [0]
-INFO  Telegram notifications sent by this Alertmanager: 8
+INFO  Telegram notifications sent by this Alertmanager: 2
 
-72 passed, 0 failed (280 s)
+72 passed, 0 failed (270 s)

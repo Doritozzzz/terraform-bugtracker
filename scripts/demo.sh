@@ -165,7 +165,7 @@ pause
 # -------------------------------------------------------------- 8. alert
 
 step "The alert reaches the team" \
-  "Prometheus noticed the stopped replica. After 30 seconds down (so a quick restart never wakes anyone), Alertmanager sends an email and a Telegram message with a link to the dashboard."
+  "Prometheus noticed the stopped replica. After 30 seconds down (so a quick restart never wakes anyone), Alertmanager sends an email, and a Telegram message when a bot is configured, with a link to the dashboard."
 printf '\n%sWaiting for the email%s' "$D" "$N"
 if wait_until 150 mail_has 'FIRING.*WebReplicaDown'; then
   result "Email received $((SECONDS - T_DOWN)) s after the replica stopped."
@@ -173,7 +173,7 @@ if wait_until 150 mail_has 'FIRING.*WebReplicaDown'; then
 else
   problem "No alert email within 150 s."
 fi
-look "Mailbox: $MAIL   Telegram: the same message on the phone."
+look "Mailbox: $MAIL   With a Telegram bot configured, the same message arrives on the phone."
 pause
 
 # ----------------------------------------------------------- 9. recovery
