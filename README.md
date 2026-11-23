@@ -141,6 +141,7 @@ environments/dev|prod    One Terraform root per environment: main.tf, variables.
 monitoring/dashboards    Grafana dashboards as code (provisioned, not editable from the UI)
 monitoring/alerts        Prometheus alerting rules + their promtool unit tests
 scripts/test.sh          End-to-end verification (make test)
+scripts/demo.sh          Guided demonstration (make demo)
 Makefile                 Every operation, for ENV=dev|prod
 ```
 
@@ -278,15 +279,38 @@ persistence, logs and metrics per environment, and an alert from firing to resol
 | `make stop` / `make start` | Stop or start an environment's containers (data kept) |
 | `make destroy` | Delete an environment, data included |
 | `make recreate-db` | Replace the database container to show the data survives |
+| `make kill-web` / `start-web` | Stop / start web replica 2 (in prod it fires an alert) |
 | `make kill-db` / `start-db`, `kill-cache` / `start-cache`, `kill-storage` / `start-storage` | Simulate failures and recoveries |
 | `make test-db` / `make test-cache` | Check PostgreSQL / Redis directly |
 | `make test` / `make test-alerts` | End-to-end suite / alert rule tests |
+| `make demo` | Guided 10-minute demonstration (`bash scripts/demo.sh --auto` runs it without pauses) |
 | `make fmt` / `make validate` | Format and validate the Terraform code |
 | `make dist` | Zip of the committed files for the submission |
 
 ---
 
-## 11. Design Decisions & Known Limitations
+## 11. Guided Demo (`make demo`)
+
+Eleven short steps on prod, one ENTER each. Every step says what it shows, prints each command before running it
+and points to what to look at in the browser. It takes about 2 minutes without pauses.
+
+1. **One command deploys everything:** `make up-all`, and a second plan has nothing to change.
+2. **Two environments side by side:** their URLs and containers.
+3. **Same modules, different settings:** the two `terraform.tfvars`.
+4. **The load balancer shares the requests** between the three replicas.
+5. **A replica fails, users notice nothing:** `make kill-web`, then 20 requests all answer 200.
+6. **Static files come from object storage**, served by the load balancer; the bucket cannot be listed.
+7. **Every request can be traced:** its request ID, found in the load balancer log.
+8. **The alert reaches the team:** the email (and the Telegram message) about a minute later.
+9. **Recovery:** `make start-web`, and the replica is back in rotation.
+10. **Secure by default:** ports, users and ignored secrets.
+11. **Everything is tested:** the alert rule tests and the result of `make test`.
+
+If the demo is stopped early, it starts the replica again.
+
+---
+
+## 12. Design Decisions & Known Limitations
 
 - **One root per environment** instead of workspaces: separate state and `terraform.tfvars`, visible differences.
 - **Modules with no project names**, minimum provider versions only, optional inputs as `null` (Docker default).
@@ -300,7 +324,7 @@ persistence, logs and metrics per environment, and an alert from firing to resol
 
 ---
 
-## 12. AI Tools Declaration
+## 13. AI Tools Declaration
 
 In accordance with citation and declaration guidelines:
 

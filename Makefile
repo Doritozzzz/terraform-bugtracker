@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 .PHONY: help init fmt validate plan apply up up-all output stop start destroy recreate-db ps \
-        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage status urls passwords test test-alerts demo dist
+        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage kill-web start-web status urls passwords test test-alerts demo dist
 
 # Environment for the Terraform targets: dev (default) or prod, e.g. make up ENV=prod.
 ENV ?= dev
@@ -90,6 +90,14 @@ kill-storage: ## Stop MinIO: /static/ fails and the open page reports it (ENV=de
 start-storage: ## Start MinIO again (ENV=dev)
 	docker start $(PREFIX)-storage
 
+# docker stop, not a crash: the restart policy leaves a manually stopped
+# container down, so the replica stays down until start-web.
+kill-web: ## Stop web replica 2: the others keep serving; in prod it fires an alert (ENV=prod)
+	docker stop $(PREFIX)-web-2
+
+start-web: ## Start web replica 2 again (ENV=prod)
+	docker start $(PREFIX)-web-2
+
 # ------------------------------------------------------------------ both
 
 status: ## Show /status of dev and prod
@@ -124,7 +132,7 @@ test-alerts: ## Check the alerting rules and run their unit tests
 test: ## Converge dev and prod and verify them end to end (FRESH=1: from nothing)
 	@bash scripts/test.sh
 
-demo: ## Run the guided demonstration (P1 version, being migrated)
+demo: ## Guided 10-minute demonstration of prod (bash scripts/demo.sh --auto: no pauses)
 	@bash scripts/demo.sh
 
 dist: ## Build dist/terraform-bugtracker.zip from the committed files
