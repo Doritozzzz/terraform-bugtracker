@@ -155,7 +155,7 @@ Makefile                 Every operation, for ENV=dev|prod
 | [`database`](modules/database/README.md) | PostgreSQL 18 | Generated password, named volume, init script, slow query log (`slow_query_ms`) |
 | [`cache`](modules/cache/README.md) | Redis 8 | Pure cache: no persistence, `maxmemory` + LRU, generated password |
 | [`load-balancer`](modules/load-balancer/README.md) | HAProxy 3.4 | Health checks, path routes, request ID, JSON access log, metrics port |
-| [`object-storage`](modules/object-storage/README.md) | MinIO + one-shot init | Creates the bucket, download-only policy, syncs a folder when it changes |
+| [`object-storage`](modules/object-storage/README.md) | MinIO + init script | Creates the bucket, download-only policy, syncs a folder when it changes |
 | [`log-store`](modules/log-store/README.md) | Loki | 7-day retention, no usage reports |
 | [`log-collector`](modules/log-collector/README.md) | Alloy + Docker API proxy | Collects only the containers with given labels, through a read-only API proxy |
 | [`container-metrics`](modules/container-metrics/README.md) | cAdvisor | CPU, memory, network and Docker health of every container, no privileged mode |

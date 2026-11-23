@@ -12,7 +12,7 @@ variable "bucket" {
   description = "Bucket created on start. Anonymous users can download its objects, nothing else."
   type        = string
 
-  # S3 naming rules, checked at plan time instead of failing inside the init container.
+  # S3 naming rules, checked at plan time instead of failing inside the init script.
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", var.bucket))
     error_message = "bucket must be 3-63 characters: lowercase letters, digits, dots and hyphens, starting and ending with a letter or digit."
@@ -61,7 +61,7 @@ variable "memory" {
 }
 
 variable "labels" {
-  description = "Docker labels for the MinIO server container (not the one-shot upload), e.g. environment and service, used by monitoring to filter it."
+  description = "Docker labels for the MinIO container, e.g. environment and service, used by monitoring to filter it."
   type        = map(string)
   default     = {}
 }

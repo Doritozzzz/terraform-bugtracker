@@ -20,7 +20,8 @@ module "storage" {
 
 ## Notes
 
-- The upload is a one-shot container (`<name>-init`) with the same image; a postcondition fails the apply if it fails.
+- The upload is `init.sh`, run by Terraform on the host (`local-exec`): it calls `docker exec` so `mc` runs inside the MinIO container, which already holds the password. No extra container is left behind; a failed upload fails the apply and the next apply retries it.
+- The machine running Terraform needs `bash` and the `docker` CLI.
 - The bucket policy only allows `s3:GetObject`: anonymous users cannot list, upload or delete (MinIO's built-in `download` policy would allow listing).
 - Every object gets a `Cache-Control` header (`no-cache` by default: browsers revalidate and changes show at once).
 - The official MinIO images are no longer published, so the Chainguard image is pinned by digest.
@@ -47,7 +48,7 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 | cache\_control | Cache-Control header of every uploaded object. no-cache makes browsers revalidate (cheap 304) so changes show at once. | `string` | `"no-cache"` | no |
 | console\_port | Port on 127.0.0.1 for the MinIO web console. Null keeps the console unpublished. | `number` | `null` | no |
 | image | MinIO image. The official images can no longer be pulled; Chainguard only tags latest, so it is pinned by digest. | `string` | `"cgr.dev/chainguard/minio@sha256:548147b5fc95a67e3e45285dff7e0e50326c3eb1977c6218039461771156c5e7"` | no |
-| labels | Docker labels for the MinIO server container (not the one-shot upload), e.g. environment and service, used by monitoring to filter it. | `map(string)` | `{}` | no |
+| labels | Docker labels for the MinIO container, e.g. environment and service, used by monitoring to filter it. | `map(string)` | `{}` | no |
 | memory | Memory limit in MB. Null means no limit. | `number` | `null` | no |
 | restart | Docker restart policy: no, on-failure, always or unless-stopped. Null keeps the Docker default (no). | `string` | `null` | no |
 

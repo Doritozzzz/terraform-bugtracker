@@ -98,6 +98,13 @@ resource "docker_container" "minio" {
     container_path = "/data"
   }
 
+  # Folder that init.sh uploads, mounted read-only: MinIO never changes it.
+  volumes {
+    host_path      = abspath(var.source_dir)
+    container_path = "/source"
+    read_only      = true
+  }
+
   # Published on localhost only: the Docker default (0.0.0.0) would expose it
   # to the whole local network.
   dynamic "ports" {
@@ -117,81 +124,28 @@ resource "docker_container" "minio" {
     timeout  = "3s"
   }
 
-  # terraform apply waits until MinIO is healthy, so the upload below can run.
+  # terraform apply waits until MinIO is healthy, so init.sh below can run.
   wait = true
 }
 
-# Changes only when a file to upload changes; it replaces the init container below.
-resource "terraform_data" "source" {
-  input = local.source_hash
-}
+# Prepares the bucket with init.sh (see the script) right after MinIO is
+# healthy, and again whenever the files, the bucket, the policy, the header
+# or the container change. Every object gets a Cache-Control header; without
+# one, browsers guess how long to reuse a file without asking. A failed
+# script fails the apply, and the next apply runs it again.
+resource "terraform_data" "init" {
+  triggers_replace = [docker_container.minio.id, local.source_hash, var.bucket, local.read_policy, var.cache_control]
 
-# One-shot container (same image, which also ships the mc client): creates the
-# bucket, applies the read-only policy and mirrors source_dir into it, so the
-# bucket ends up with exactly the files of the folder. Every object gets a
-# Cache-Control header; without one, browsers guess how long to reuse a file
-# without asking. It runs on creation and again whenever the files, the
-# bucket, the policy or the header change.
-resource "docker_container" "init" {
-  name  = "${var.name}-init"
-  image = docker_image.minio.image_id
-
-  # Run to completion and wait for it instead of keeping it running.
-  must_run = false
-  attach   = true
-
-  log_driver    = "local"
-  read_only     = true
-  security_opts = ["no-new-privileges:true"]
-  capabilities {
-    drop = ["ALL"]
-  }
-  tmpfs = {
-    "/tmp" = ""
-  }
-
-  # MC_HOST_<alias> defines the "minio" alias without writing a config file.
-  env = [
-    "MC_CONFIG_DIR=/tmp/.mc",
-    "MC_HOST_minio=http://${local.root_user}:${random_password.root.result}@${docker_container.minio.name}:${local.api_port}",
-    "BUCKET=${var.bucket}",
-    "POLICY=${local.read_policy}",
-    "CACHE_CONTROL=${var.cache_control}",
-  ]
-
-  entrypoint = ["bash", "-c"]
-  command = [<<-EOT
-    set -eu
-    mc mb --ignore-existing "minio/$BUCKET"
-    printf '%s' "$POLICY" > /tmp/policy.json
-    mc anonymous set-json /tmp/policy.json "minio/$BUCKET"
-    # cp uploads every file, so the header is applied even to unchanged files
-    # (mirror skips those); mirror --remove then deletes files no longer in the folder.
-    mc cp --recursive --attr "Cache-Control=$CACHE_CONTROL" /source/ "minio/$BUCKET"
-    mc mirror --remove /source "minio/$BUCKET"
-  EOT
-  ]
-
-  volumes {
-    host_path      = abspath(var.source_dir)
-    container_path = "/source"
-    read_only      = true
-  }
-
-  dynamic "networks_advanced" {
-    for_each = var.networks
-    content {
-      name = networks_advanced.value
-    }
-  }
-
-  lifecycle {
-    replace_triggered_by = [terraform_data.source]
-
-    # Without this a failed upload would still count as a successful apply.
-    postcondition {
-      condition     = self.exit_code == 0
-      error_message = "Uploading to the bucket failed: see docker logs ${var.name}-init."
+  provisioner "local-exec" {
+    command = "${path.module}/init.sh"
+    # Run through bash, so the script needs no execute permission.
+    interpreter = ["bash"]
+    environment = {
+      CONTAINER     = docker_container.minio.name
+      API_PORT      = local.api_port
+      BUCKET        = var.bucket
+      POLICY        = local.read_policy
+      CACHE_CONTROL = var.cache_control
     }
   }
 }
