@@ -149,21 +149,23 @@ Makefile                 Every operation, for ENV=dev|prod
 
 | Module | Runs | Notes |
 | :--- | :--- | :--- |
-| `web` | N replicas of the app | Image built from the code, tagged with its hash; optional `metrics_port` |
-| `database` | PostgreSQL 18 | Generated password, named volume, init script, slow query log (`slow_query_ms`) |
-| `cache` | Redis 8 | Pure cache: no persistence, `maxmemory` + LRU, generated password |
-| `load-balancer` | HAProxy 3.4 | Health checks, path routes, request ID, JSON access log, metrics port |
-| `object-storage` | MinIO + one-shot init | Creates the bucket, download-only policy, syncs a folder when it changes |
-| `log-store` | Loki | 7-day retention, no usage reports |
-| `log-collector` | Alloy + Docker API proxy | Collects only the containers with given labels, through a read-only API proxy |
-| `container-metrics` | cAdvisor | CPU, memory, network and Docker health of every container, no privileged mode |
-| `metrics-store` | Prometheus | Scrape jobs, label filters, alerting rules, Alertmanager targets |
-| `dashboards` | Grafana | Provisioned data sources and dashboards, generated admin password |
-| `alert-manager` | Alertmanager | Grouping, inhibition, email and Telegram receivers, links to Grafana |
-| `mail-catcher` | Mailpit | Test SMTP server with a web UI |
+| [`web`](modules/web/README.md) | N replicas of the app | Image built from the code, tagged with its hash; optional `metrics_port` |
+| [`database`](modules/database/README.md) | PostgreSQL 18 | Generated password, named volume, init script, slow query log (`slow_query_ms`) |
+| [`cache`](modules/cache/README.md) | Redis 8 | Pure cache: no persistence, `maxmemory` + LRU, generated password |
+| [`load-balancer`](modules/load-balancer/README.md) | HAProxy 3.4 | Health checks, path routes, request ID, JSON access log, metrics port |
+| [`object-storage`](modules/object-storage/README.md) | MinIO + one-shot init | Creates the bucket, download-only policy, syncs a folder when it changes |
+| [`log-store`](modules/log-store/README.md) | Loki | 7-day retention, no usage reports |
+| [`log-collector`](modules/log-collector/README.md) | Alloy + Docker API proxy | Collects only the containers with given labels, through a read-only API proxy |
+| [`container-metrics`](modules/container-metrics/README.md) | cAdvisor | CPU, memory, network and Docker health of every container, no privileged mode |
+| [`metrics-store`](modules/metrics-store/README.md) | Prometheus | Scrape jobs, label filters, alerting rules, Alertmanager targets |
+| [`dashboards`](modules/dashboards/README.md) | Grafana | Provisioned data sources and dashboards, generated admin password |
+| [`alert-manager`](modules/alert-manager/README.md) | Alertmanager | Grouping, inhibition, email and Telegram receivers, links to Grafana |
+| [`mail-catcher`](modules/mail-catcher/README.md) | Mailpit | Test SMTP server with a web UI |
 
 Every module takes `restart`, `memory` and `labels` as optional inputs (null keeps Docker's default), pins its image,
-uses the rotating `local` log driver and passes data to others through outputs.
+uses the rotating `local` log driver and passes data to others through outputs. **Each module has its own README**
+with a usage example, notes and its inputs and outputs (e.g. [modules/load-balancer](modules/load-balancer/README.md));
+the tables are generated from the code with [terraform-docs](https://terraform-docs.io/) (`make docs`).
 
 ---
 
@@ -285,6 +287,7 @@ persistence, logs and metrics per environment, and an alert from firing to resol
 | `make test` / `make test-alerts` | End-to-end suite / alert rule tests |
 | `make demo` | Guided 10-minute demonstration (`bash scripts/demo.sh --auto` runs it without pauses) |
 | `make fmt` / `make validate` | Format and validate the Terraform code |
+| `make docs` | Regenerate the inputs/outputs tables of the module READMEs (terraform-docs) |
 | `make dist` | Zip of the committed files for the submission |
 
 ---

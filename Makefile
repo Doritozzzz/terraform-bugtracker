@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help init fmt validate plan apply up up-all output stop start destroy recreate-db ps \
+.PHONY: help init fmt validate docs plan apply up up-all output stop start destroy recreate-db ps \
         test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage kill-web start-web status urls passwords test test-alerts demo dist
 
 # Environment for the Terraform targets: dev (default) or prod, e.g. make up ENV=prod.
@@ -25,6 +25,14 @@ fmt: ## Format every .tf file
 validate: init ## Check formatting and configuration (ENV=dev)
 	terraform fmt -recursive -check
 	$(TF) validate
+
+# terraform-docs fills the inputs/outputs tables of every module README from the code.
+TERRAFORM_DOCS_IMAGE := quay.io/terraform-docs/terraform-docs:0.25.1
+
+docs: ## Regenerate the inputs/outputs tables of the module READMEs
+	@for module in modules/*/; do \
+	  docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/repo" -w /repo $(TERRAFORM_DOCS_IMAGE) -c .terraform-docs.yml "$$module" | grep -v '^README.md updated'; \
+	done; true
 
 plan: init ## Compute the changes and save them to tfplan (ENV=dev)
 	$(TF) plan -input=false -out=tfplan
