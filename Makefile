@@ -31,7 +31,7 @@ TERRAFORM_DOCS_IMAGE := quay.io/terraform-docs/terraform-docs:0.25.1
 
 docs: ## Regenerate the inputs/outputs tables of the module READMEs
 	@for module in modules/*/; do \
-	  docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/repo" -w /repo $(TERRAFORM_DOCS_IMAGE) -c .terraform-docs.yml "$$module" | grep -v '^README.md updated'; \
+	  docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/repo" -w /repo $(TERRAFORM_DOCS_IMAGE) -c .terraform-docs.yml "$$module" | grep -v 'README.md updated successfully$$'; \
 	done; true
 
 plan: init ## Compute the changes and save them to tfplan (ENV=dev)

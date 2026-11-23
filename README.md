@@ -264,6 +264,8 @@ replicas, the cache, the static files and their permissions, container hardening
 persistence, logs and metrics per environment, and an alert from firing to resolved email.
 
 > **Full test execution log:** [docs/evidence/test-results.txt](docs/evidence/test-results.txt) (`72 passed, 0 failed`).
+> Run from the submission zip without Telegram, the suite reports `70 passed`: the check on versioned files needs a
+> git clone and the Telegram check needs a bot, so both are skipped with an `INFO` line saying why.
 > Alert rule tests: [docs/evidence/alert-rules-tests.txt](docs/evidence/alert-rules-tests.txt).
 
 ### Measurements (real test run)
@@ -294,7 +296,7 @@ persistence, logs and metrics per environment, and an alert from firing to resol
 | `make demo` | Guided 10-minute demonstration (`bash scripts/demo.sh --auto` runs it without pauses) |
 | `make fmt` / `make validate` | Format and validate the Terraform code |
 | `make docs` | Regenerate the inputs/outputs tables of the module READMEs (terraform-docs) |
-| `make dist` | Zip of the committed files for the submission |
+| `make dist` | Zip of the committed files for the submission (run it in a git clone) |
 
 ---
 
