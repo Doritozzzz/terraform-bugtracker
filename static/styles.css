@@ -18,6 +18,7 @@
   --info: #0070f3;
   --violet: #7928ca;
   --cyan: #0891b2;
+  --pink: #db2777;
   --neutral: #71717a;
   --overlay: rgb(0 0 0 / 0.45);
   --shadow: 0 1px 2px rgb(0 0 0 / 0.04);
@@ -45,6 +46,7 @@
   --info: #4c9aff;
   --violet: #a78bfa;
   --cyan: #22d3ee;
+  --pink: #f472b6;
   --neutral: #8b8b8b;
   --overlay: rgb(0 0 0 / 0.65);
   --shadow: none;
@@ -57,6 +59,7 @@
 .c-critical, .c-err { --c: var(--err); }
 .c-open, .c-violet { --c: var(--violet); }
 .c-in_progress, .c-cyan { --c: var(--cyan); }
+.c-pink { --c: var(--pink); }
 .c-resolved, .c-ok { --c: var(--ok); }
 
 /* -------------------------------------------------------------------- base */

@@ -8,8 +8,9 @@ const MAX_READS = 10;
 const MAX_EVENTS = 12;
 // Status checks kept to show how the load balancer spreads them.
 const MAX_HITS = 30;
-// Replica colours. Green and red are left out: they already mean up and down.
-const REPLICA_COLORS = ['violet', 'cyan', 'info', 'warn'];
+// Replica colours, enough for five replicas. Green and red are left out: they
+// already mean up and down.
+const REPLICA_COLORS = ['violet', 'cyan', 'info', 'warn', 'pink'];
 
 const PRIORITIES = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', CRITICAL: 'Critical' };
 const PRIORITY_RANK = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
