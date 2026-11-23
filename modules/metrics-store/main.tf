@@ -20,13 +20,21 @@ resource "docker_volume" "data" {
 resource "local_file" "config" {
   filename = abspath("${path.root}/.generated/${var.name}.yml")
   content = templatefile("${path.module}/prometheus.yml.tftpl", {
-    http_port   = local.http_port
-    scrape_jobs = var.scrape_jobs
+    http_port       = local.http_port
+    scrape_jobs     = var.scrape_jobs
+    external_labels = var.external_labels
+    rules           = var.rules_dir != null
   })
 
   # The provider default is 0777 (writable by anyone).
   file_permission      = "0644"
   directory_permission = "0755"
+}
+
+# Changes whenever a rule file changes. Prometheus reads rules only at startup,
+# so the container is replaced to load them, like when the config changes.
+resource "terraform_data" "rules" {
+  input = var.rules_dir == null ? null : sha1(join("", [for f in fileset(var.rules_dir, "*.rules.yml") : filesha1("${var.rules_dir}/${f}")]))
 }
 
 resource "docker_container" "prometheus" {
@@ -69,6 +77,15 @@ resource "docker_container" "prometheus" {
     read_only      = true
   }
 
+  dynamic "volumes" {
+    for_each = var.rules_dir == null ? [] : [abspath(var.rules_dir)]
+    content {
+      host_path      = volumes.value
+      container_path = "/etc/prometheus/rules"
+      read_only      = true
+    }
+  }
+
   volumes {
     volume_name    = docker_volume.data.name
     container_path = "/prometheus"
@@ -101,8 +118,8 @@ resource "docker_container" "prometheus" {
   # terraform apply waits until Prometheus is ready.
   wait = true
 
-  # The mounted file is read only at startup, so a new config needs a new container.
+  # The mounted files are read only at startup, so a new config or rule needs a new container.
   lifecycle {
-    replace_triggered_by = [local_file.config]
+    replace_triggered_by = [local_file.config, terraform_data.rules]
   }
 }

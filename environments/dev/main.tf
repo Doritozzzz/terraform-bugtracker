@@ -171,6 +171,10 @@ module "metrics_store" {
     { name = "loki", targets = [module.log_store.metrics_target] },
     { name = "alloy", targets = [module.log_collector.metrics_target] },
   ]
+  # Rules are evaluated here too, so a rule can be tried in dev before prod;
+  # only prod sends notifications.
+  rules_dir       = "${path.module}/../../monitoring/alerts"
+  external_labels = local.labels
 
   labels = merge(local.labels, { service = "metrics-store" })
 }

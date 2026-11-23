@@ -1,6 +1,18 @@
 global:
-  # The default is 1m; 15s lets an alert react within half a minute.
+  # The defaults are 1m; 15s lets an alert react within half a minute.
   scrape_interval: 15s
+  evaluation_interval: 15s
+%{ if length(external_labels) > 0 ~}
+  # Added to every alert this Prometheus sends, e.g. to tell which environment
+  # it comes from.
+  external_labels: ${jsonencode(external_labels)}
+%{ endif ~}
+%{ if rules ~}
+
+# Alerting rules, mounted read-only from the rules folder.
+rule_files:
+  - /etc/prometheus/rules/*.rules.yml
+%{ endif ~}
 
 scrape_configs:
   # Prometheus's own health and storage.

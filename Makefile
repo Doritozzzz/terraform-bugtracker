@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 .PHONY: help init fmt validate plan apply up up-all output stop start destroy recreate-db ps \
-        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage status urls passwords test demo dist
+        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage status urls passwords test test-alerts demo dist
 
 # Environment for the Terraform targets: dev (default) or prod, e.g. make up ENV=prod.
 ENV ?= dev
@@ -113,6 +113,13 @@ passwords: ## Show the generated passwords of dev and prod
 	    value=$$(terraform -chdir=environments/$$env output -raw $$name 2>/dev/null) && echo "$$env $$name: $$value"; \
 	  done; \
 	done; true
+
+# promtool ships with Prometheus; the same image the metrics-store module runs.
+PROMETHEUS_IMAGE := prom/prometheus:v3.16.0
+
+test-alerts: ## Check the alerting rules and run their unit tests
+	@docker run --rm -v "$(CURDIR)/monitoring/alerts:/alerts:ro" -w /alerts --entrypoint promtool $(PROMETHEUS_IMAGE) check rules bugtracker.rules.yml
+	@docker run --rm -v "$(CURDIR)/monitoring/alerts:/alerts:ro" -w /alerts --entrypoint promtool $(PROMETHEUS_IMAGE) test rules bugtracker.test.yml
 
 test: ## Run every verification from scratch (P1 suite, being migrated)
 	@bash scripts/test.sh

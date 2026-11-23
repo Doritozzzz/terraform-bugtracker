@@ -202,6 +202,8 @@ module "metrics_store" {
     { name = "loki", targets = [module.log_store.metrics_target] },
     { name = "alloy", targets = [module.log_collector.metrics_target] },
   ]
+  rules_dir       = "${path.module}/../../monitoring/alerts"
+  external_labels = local.labels
 
   restart = "unless-stopped"
   memory  = 256

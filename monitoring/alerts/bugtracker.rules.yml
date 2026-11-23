@@ -1,0 +1,169 @@
+# Alerting rules of the bugtracker, evaluated by the Prometheus of each
+# environment every 15 s. Few on purpose: first what users notice (errors,
+# latency), then the failures that need someone to act. Every alert waits a
+# little ("for") so that a restart of a few seconds does not notify anyone.
+#
+# Labels: severity (critical = users are or will be affected now, warning =
+# degraded or at risk) and service (the service label of the containers, used
+# to group and inhibit notifications). Annotations: summary, description with
+# what to check, and the Grafana dashboard to open (a path: the notification
+# adds the address of each environment's Grafana).
+#
+# Tested with promtool: make test-alerts (bugtracker.test.yml).
+
+groups:
+  - name: users
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(haproxy_frontend_http_responses_total{proxy="web",code="5xx"}[2m]))
+            / sum(rate(haproxy_frontend_http_responses_total{proxy="web"}[2m])) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          service: web
+        annotations:
+          summary: "{{ $value | humanizePercentage }} of the requests fail with a server error"
+          description: >-
+            More than 5% of the responses of the load balancer are 5xx, so users see errors.
+            Check which service is down on the status dashboard and the errors in the logs.
+          dashboard: /d/status/bugtracker-status
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: web
+        annotations:
+          summary: "1% of the requests take more than {{ $value | humanizeDuration }}"
+          description: >-
+            The p99 latency of the application has been above 1 s for 5 minutes. Check the
+            CPU and memory of the replicas and the slow database queries.
+          dashboard: /d/status/bugtracker-status
+
+  - name: services
+    rules:
+      - alert: WebReplicaDown
+        expr: haproxy_server_status{proxy="app",state="UP"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          service: web
+        annotations:
+          summary: "Replica {{ $labels.server }} is down"
+          description: >-
+            The load balancer health check fails for {{ $labels.server }}, so it gets no
+            traffic. The other replicas serve the users. Check its logs and whether its
+            container is running.
+          dashboard: /d/logs/bugtracker-logs?var-service=web
+
+      - alert: WebCapacityLow
+        expr: sum(haproxy_server_status{proxy="app",state="UP"}) < 2
+        for: 30s
+        labels:
+          severity: critical
+          service: web
+        annotations:
+          summary: "Only {{ $value }} web replica(s) up"
+          description: >-
+            At most one replica answers: one more failure takes the web down. Bring the
+            stopped replicas back.
+          dashboard: /d/status/bugtracker-status
+
+      - alert: LoadBalancerDown
+        expr: up{job="haproxy"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: load-balancer
+        annotations:
+          summary: "The load balancer does not answer"
+          description: >-
+            Prometheus cannot reach HAProxy, the only entry point: nobody can use the web.
+            Check whether its container is running.
+          dashboard: /d/logs/bugtracker-logs?var-service=load-balancer
+
+      - alert: DatabaseUnreachable
+        expr: min(bugtracker_dependency_up{dependency="database"}) == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "The web cannot reach PostgreSQL"
+          description: >-
+            At least one replica cannot use the database, so it answers 503. Check whether
+            the database container is running and healthy.
+          dashboard: /d/logs/bugtracker-logs?var-service=database
+
+      - alert: CacheUnreachable
+        expr: min(bugtracker_dependency_up{dependency="cache"}) == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "The web cannot reach Redis"
+          description: >-
+            Reads go to PostgreSQL instead: the web still works, more slowly. Check whether
+            the cache container is running.
+          dashboard: /d/logs/bugtracker-logs?var-service=cache
+
+      - alert: StorageUnreachable
+        expr: min(bugtracker_dependency_up{dependency="storage"}) == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: storage
+        annotations:
+          summary: "The web cannot reach MinIO"
+          description: >-
+            Pages opened now load without their styles and scripts; the data and the API
+            are fine. Check whether the storage container is running.
+          dashboard: /d/logs/bugtracker-logs?var-service=storage
+
+  - name: containers
+    rules:
+      - alert: ContainerUnhealthy
+        expr: max by (name, container_label_service) (container_health_state) == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: "{{ $labels.container_label_service }}"
+        annotations:
+          summary: "Container {{ $labels.name }} is unhealthy"
+          description: >-
+            Its own Docker healthcheck fails. Check its logs.
+          dashboard: /d/logs/bugtracker-logs?var-service={{ $labels.container_label_service }}
+
+      - alert: ContainerMemoryNearLimit
+        expr: |
+          max by (name, container_label_service) (container_memory_working_set_bytes)
+            / max by (name, container_label_service) (container_spec_memory_limit_bytes > 0) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: "{{ $labels.container_label_service }}"
+        annotations:
+          summary: "Container {{ $labels.name }} uses {{ $value | humanizePercentage }} of its memory limit"
+          description: >-
+            Near its limit the kernel kills the process (OOM). Check for a leak or raise the
+            limit in the environment.
+          dashboard: /d/status/bugtracker-status
+
+  - name: monitoring
+    rules:
+      - alert: MonitoringTargetDown
+        expr: up{job=~"loki|alloy|cadvisor"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: monitoring
+        annotations:
+          summary: "{{ $labels.job }} does not answer"
+          description: >-
+            Logs or container metrics are no longer being collected, so dashboards and
+            alerts miss data. Check whether its container is running.
+          dashboard: /d/status/bugtracker-status

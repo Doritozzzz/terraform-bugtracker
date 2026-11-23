@@ -25,6 +25,18 @@ variable "scrape_jobs" {
   }
 }
 
+variable "rules_dir" {
+  description = "Optional folder with alerting rule files, named *.rules.yml. Other files in it (such as rule tests) are not loaded."
+  type        = string
+  default     = null
+}
+
+variable "external_labels" {
+  description = "Labels added to every alert this Prometheus sends, e.g. environment = \"prod\"."
+  type        = map(string)
+  default     = {}
+}
+
 variable "port" {
   description = "Port on 127.0.0.1 for the Prometheus web UI. Null keeps it unpublished."
   type        = number

@@ -1,0 +1,254 @@
+# Unit tests of the alerting rules: make test-alerts.
+# promtool feeds made-up series and checks which alerts fire and when. Values
+# are one sample every 15 s (the scrape interval): '1 0 0' means 1 at 0s, 0 at
+# 15s, 0 at 30s; '0+10x20' means 0, 10, 20... for 20 more samples. Each alert
+# is checked both ways: it fires when it should, and not before its "for" or
+# on a harmless blip.
+
+rule_files:
+  - bugtracker.rules.yml
+
+evaluation_interval: 15s
+
+tests:
+  # A replica fails its health check: warning after 30 s, not before.
+  - interval: 15s
+    input_series:
+      - series: 'haproxy_server_status{proxy="app",state="UP",server="bugtracker-prod-web-2"}'
+        values: '1 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 30s
+        alertname: WebReplicaDown
+        exp_alerts: []
+      - eval_time: 60s
+        alertname: WebReplicaDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: web
+              proxy: app
+              state: UP
+              server: bugtracker-prod-web-2
+            exp_annotations:
+              summary: Replica bugtracker-prod-web-2 is down
+              description: >-
+                The load balancer health check fails for bugtracker-prod-web-2, so it gets no
+                traffic. The other replicas serve the users. Check its logs and whether its
+                container is running.
+              dashboard: /d/logs/bugtracker-logs?var-service=web
+
+  # A restart of a few seconds (one bad sample) must not notify anyone.
+  - interval: 15s
+    input_series:
+      - series: 'haproxy_server_status{proxy="app",state="UP",server="bugtracker-prod-web-2"}'
+        values: '1 0 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 90s
+        alertname: WebReplicaDown
+        exp_alerts: []
+
+  # Two of three replicas down: only one left, critical.
+  - interval: 15s
+    input_series:
+      - series: 'haproxy_server_status{proxy="app",state="UP",server="web-1"}'
+        values: '1 1 1 1 1 1'
+      - series: 'haproxy_server_status{proxy="app",state="UP",server="web-2"}'
+        values: '1 0 0 0 0 0'
+      - series: 'haproxy_server_status{proxy="app",state="UP",server="web-3"}'
+        values: '1 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 60s
+        alertname: WebCapacityLow
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: web
+            exp_annotations:
+              summary: Only 1 web replica(s) up
+              description: >-
+                At most one replica answers: one more failure takes the web down. Bring the
+                stopped replicas back.
+              dashboard: /d/status/bugtracker-status
+
+  # About 9% of the responses are 5xx: critical after 1 minute.
+  - interval: 15s
+    input_series:
+      - series: 'haproxy_frontend_http_responses_total{proxy="web",code="2xx"}'
+        values: '0+150x20'
+      - series: 'haproxy_frontend_http_responses_total{proxy="web",code="5xx"}'
+        values: '0+15x20'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: HighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: web
+            exp_annotations:
+              summary: 9.091% of the requests fail with a server error
+              description: >-
+                More than 5% of the responses of the load balancer are 5xx, so users see errors.
+                Check which service is down on the status dashboard and the errors in the logs.
+              dashboard: /d/status/bugtracker-status
+
+  # Under 1% of 5xx is not an incident.
+  - interval: 15s
+    input_series:
+      - series: 'haproxy_frontend_http_responses_total{proxy="web",code="2xx"}'
+        values: '0+150x20'
+      - series: 'haproxy_frontend_http_responses_total{proxy="web",code="5xx"}'
+        values: '0+1x20'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: HighErrorRate
+        exp_alerts: []
+
+  # Every request takes between 1 and 2.5 s: p99 above 1 s for 5 minutes.
+  - interval: 15s
+    input_series:
+      - series: 'http_request_duration_seconds_bucket{le="0.5"}'
+        values: '0+0x50'
+      - series: 'http_request_duration_seconds_bucket{le="1"}'
+        values: '0+0x50'
+      - series: 'http_request_duration_seconds_bucket{le="2.5"}'
+        values: '0+10x50'
+      - series: 'http_request_duration_seconds_bucket{le="+Inf"}'
+        values: '0+10x50'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: HighLatency
+        exp_alerts: []
+      - eval_time: 11m
+        alertname: HighLatency
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: web
+            exp_annotations:
+              summary: 1% of the requests take more than 2.485s
+              description: >-
+                The p99 latency of the application has been above 1 s for 5 minutes. Check the
+                CPU and memory of the replicas and the slow database queries.
+              dashboard: /d/status/bugtracker-status
+
+  # The load balancer stops answering Prometheus.
+  - interval: 15s
+    input_series:
+      - series: 'up{job="haproxy",instance="bugtracker-prod-lb:8405"}'
+        values: '1 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 60s
+        alertname: LoadBalancerDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: load-balancer
+              job: haproxy
+              instance: bugtracker-prod-lb:8405
+            exp_annotations:
+              summary: The load balancer does not answer
+              description: >-
+                Prometheus cannot reach HAProxy, the only entry point: nobody can use the web.
+                Check whether its container is running.
+              dashboard: /d/logs/bugtracker-logs?var-service=load-balancer
+
+  # One replica loses the database while another still reaches it: it fires,
+  # because that replica answers 503. Dev has no cache series at all: no alert.
+  - interval: 15s
+    input_series:
+      - series: 'bugtracker_dependency_up{dependency="database",instance="web-1:9464"}'
+        values: '1 0 0 0 0'
+      - series: 'bugtracker_dependency_up{dependency="database",instance="web-2:9464"}'
+        values: '1 1 1 1 1'
+      - series: 'bugtracker_dependency_up{dependency="storage",instance="web-1:9464"}'
+        values: '1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 60s
+        alertname: DatabaseUnreachable
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: database
+            exp_annotations:
+              summary: The web cannot reach PostgreSQL
+              description: >-
+                At least one replica cannot use the database, so it answers 503. Check whether
+                the database container is running and healthy.
+              dashboard: /d/logs/bugtracker-logs?var-service=database
+      - eval_time: 60s
+        alertname: CacheUnreachable
+        exp_alerts: []
+      - eval_time: 60s
+        alertname: StorageUnreachable
+        exp_alerts: []
+
+  # A failing Docker healthcheck: the service label comes from the container.
+  - interval: 15s
+    input_series:
+      - series: 'container_health_state{name="bugtracker-prod-db",container_label_service="database",id="/a"}'
+        values: '1 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 90s
+        alertname: ContainerUnhealthy
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: database
+              name: bugtracker-prod-db
+              container_label_service: database
+            exp_annotations:
+              summary: Container bugtracker-prod-db is unhealthy
+              description: Its own Docker healthcheck fails. Check its logs.
+              dashboard: /d/logs/bugtracker-logs?var-service=database
+
+  # 95% of a 100 MiB limit for 5 minutes fires; a container with no limit
+  # (dev) never does.
+  - interval: 15s
+    input_series:
+      - series: 'container_memory_working_set_bytes{name="bugtracker-prod-web-1",container_label_service="web"}'
+        values: '99614720x30'
+      - series: 'container_spec_memory_limit_bytes{name="bugtracker-prod-web-1",container_label_service="web"}'
+        values: '104857600x30'
+      - series: 'container_memory_working_set_bytes{name="bugtracker-dev-web-1",container_label_service="web"}'
+        values: '99614720x30'
+      - series: 'container_spec_memory_limit_bytes{name="bugtracker-dev-web-1",container_label_service="web"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ContainerMemoryNearLimit
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: web
+              name: bugtracker-prod-web-1
+              container_label_service: web
+            exp_annotations:
+              summary: Container bugtracker-prod-web-1 uses 95% of its memory limit
+              description: >-
+                Near its limit the kernel kills the process (OOM). Check for a leak or raise the
+                limit in the environment.
+              dashboard: /d/status/bugtracker-status
+
+  # The log store stops answering for 2 minutes.
+  - interval: 15s
+    input_series:
+      - series: 'up{job="loki",instance="bugtracker-prod-loki:3100"}'
+        values: '1 0 0 0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 90s
+        alertname: MonitoringTargetDown
+        exp_alerts: []
+      - eval_time: 150s
+        alertname: MonitoringTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: monitoring
+              job: loki
+              instance: bugtracker-prod-loki:3100
+            exp_annotations:
+              summary: loki does not answer
+              description: >-
+                Logs or container metrics are no longer being collected, so dashboards and
+                alerts miss data. Check whether its container is running.
+              dashboard: /d/status/bugtracker-status
