@@ -12,9 +12,11 @@
   <img src="https://img.shields.io/badge/Tests-72%20Passed-success?style=for-the-badge&logo=githubactions&logoColor=white" alt="Tests" />
 </p>
 
-The incident tracker of the first assignment, now deployed with **Terraform** (Docker provider) as a simulated
-cloud: two environments that run side by side, a load balancer in front of several web replicas, object storage
-for the static files, and a monitoring stack with centralized logs, dashboards and alerts.
+A complete, production-style infrastructure for an IT incident tracker (Node.js, PostgreSQL, Redis), written as
+code with **Terraform** and run on Docker as a local cloud. One command brings up a development and a production
+environment side by side: a load balancer in front of replicated web servers, S3-compatible object storage, and
+observability with metrics, centralized logs, dashboards and alerts that reach email and Telegram. Every module is
+reusable, every container is hardened, and an end-to-end suite of 72 checks proves it all works.
 
 ---
 
