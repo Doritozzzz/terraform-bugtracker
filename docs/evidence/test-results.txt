@@ -1,4 +1,4 @@
-Verification run: 2026-11-23 08:13:36 UTC
+Verification run: 2026-11-23 20:39:13 UTC
 Docker 29.10.0, Terraform v1.17.2
 
 == 1. Code checks (no containers needed) ==
@@ -9,8 +9,10 @@ PASS  alerting rules are valid and their unit tests pass (promtool)
 PASS  no state, plan or secret file is versioned
 
 == 2. Deploy ==
+INFO  FRESH=1: destroying both environments, data included
+PASS  nothing of the project is left [0]
 PASS  make up-all brings up dev and prod
-INFO  deploy took 24 s
+INFO  deploy took 194 s
 PASS  a second plan of dev has nothing to change (code 0) [0]
 PASS  a second plan of prod has nothing to change (code 0) [0]
 PASS  dev: all 11 containers running [11]
@@ -32,16 +34,18 @@ PASS  a valid new incident is created [201]
 PASS  an invalid incident is rejected [400]
 PASS  the seeded data is there (dev) [50006]
 
-== 4. Cache (prod) and static files (MinIO) ==
+== 4. Cache (prod), static files and images (MinIO) ==
 PASS  dev has the cache disabled [disabled]
 PASS  prod: first read after a write is a cache MISS [MISS]
 PASS  prod: the next read is a cache HIT [HIT]
-PASS  dev: static files are served from the bucket [200]
-PASS  dev: static files are revalidated (Cache-Control: no-cache) [no-cache]
+PASS  dev: CSS and JavaScript are served by the web replicas [bugtracker-dev-web]
+PASS  dev: images are served from the bucket [200]
+PASS  dev: images are revalidated (Cache-Control: no-cache) [no-cache]
 PASS  dev: anonymous users cannot list the bucket [403]
 PASS  dev: anonymous users cannot upload [403]
-PASS  prod: static files are served from the bucket [200]
-PASS  prod: static files are revalidated (Cache-Control: no-cache) [no-cache]
+PASS  prod: CSS and JavaScript are served by the web replicas [bugtracker-prod-web]
+PASS  prod: images are served from the bucket [200]
+PASS  prod: images are revalidated (Cache-Control: no-cache) [no-cache]
 PASS  prod: anonymous users cannot list the bucket [403]
 PASS  prod: anonymous users cannot upload [403]
 PASS  prod: MinIO publishes no port (no admin console) []
@@ -83,17 +87,17 @@ PASS  prod: container metrics only cover its own environment [['prod']]
 PASS  prod: Grafana's prometheus data source works [OK]
 PASS  prod: Grafana's loki data source works [OK]
 PASS  prod: both dashboards are provisioned [2]
-INFO  prod p99 latency of the last 5 minutes: 45.5 ms
+INFO  prod p99 latency of the last 5 minutes: 81.6 ms
 
 == 9. Alerts (prod) ==
 PASS  Prometheus loaded the 11 alerting rules [11]
 PASS  no alert fires while everything is healthy [[]]
 PASS  a stopped replica fires WebReplicaDown
 PASS  and its email reaches the mailbox
-INFO  alert email received 58 s after the replica stopped
+INFO  alert email received 68 s after the replica stopped
 PASS  when it comes back, the resolved email arrives
 INFO  mailbox: [RESOLVED] WebReplicaDown (prod) | [FIRING:1] WebReplicaDown (prod)
 PASS  Telegram notifications sent without failures [0]
 INFO  Telegram notifications sent by this Alertmanager: 2
 
-72 passed, 0 failed (270 s)
+75 passed, 0 failed (491 s)

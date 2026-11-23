@@ -16,7 +16,7 @@ A complete, production-style infrastructure for an IT incident tracker (Node.js,
 code with **Terraform** and run on Docker as a local cloud. One command brings up a development and a production
 environment side by side: a load balancer in front of replicated web servers, S3-compatible object storage, and
 observability with metrics, centralized logs, dashboards and alerts that reach email and Telegram. Every module is
-reusable, every container is hardened, and an end-to-end suite of 72 checks proves it all works.
+reusable, every container is hardened, and an end-to-end suite of 74 checks proves it all works.
 
 ---
 
@@ -73,6 +73,10 @@ graph LR
 The page shows **which replica served it** (header badge and the *System* view):
 
 ![System view in prod](docs/images/app-system-prod.png)
+
+Every priority shows its traffic-light picture, served from the MinIO bucket:
+
+<img src="docs/images/app-priorities.png" width="480" alt="New incident form with a picture for each priority" />
 
 ---
 
@@ -254,7 +258,7 @@ Searching a request ID in the *Logs* dashboard (here a 503 the load balancer ret
 ## 9. Verification & Automated Tests
 
 ```bash
-make test            # converge both environments, then 72 checks (about 5 minutes)
+make test            # converge both environments, then 74 checks (about 5 minutes)
 FRESH=1 make test    # destroy everything first and deploy from nothing
 make test-alerts     # alerting rules: syntax + promtool unit tests
 ```
@@ -263,8 +267,9 @@ The suite covers code checks (fmt, validate, no secret in git), an empty second 
 replicas, the cache, the images and their permissions, container hardening, high availability, database
 persistence, logs and metrics per environment, and an alert from firing to resolved email.
 
-> **Full test execution log:** [docs/evidence/test-results.txt](docs/evidence/test-results.txt) (`72 passed, 0 failed`).
-> Run from the submission zip without Telegram, the suite reports `70 passed`: the check on versioned files needs a
+> **Full test execution log:** [docs/evidence/test-results.txt](docs/evidence/test-results.txt) (`75 passed, 0 failed`:
+> run with `FRESH=1` from nothing, which adds one check, that nothing of the project was left after destroying).
+> Run from the submission zip without Telegram, the suite reports `72 passed`: the check on versioned files needs a
 > git clone and the Telegram check needs a bot, so both are skipped with an `INFO` line saying why.
 > Alert rule tests: [docs/evidence/alert-rules-tests.txt](docs/evidence/alert-rules-tests.txt).
 
@@ -330,12 +335,18 @@ If the demo is stopped early, it starts the replica again and returns prod to it
 - **One root per environment** instead of workspaces: separate state and `terraform.tfvars`, visible differences.
 - **Modules with no project names**, minimum provider versions only, optional inputs as `null` (Docker default).
 - **Pinned images** (exact tags; MinIO by digest because only `latest` is published).
+- **Object storage holds media, not code:** the bucket serves the priority pictures; CSS and JavaScript ship in the
+  web image and are versioned with it (in the cloud: S3 behind a CDN for media, the build pipeline for code).
+- **The bucket is prepared by an init script** that Terraform runs after MinIO is healthy: `mc` runs inside the MinIO
+  container through `docker exec`, so no extra container is left and the password never leaves MinIO. The MinIO
+  Terraform provider was ruled out: it needs MinIO running while planning and its API published.
 - **One monitoring stack per environment:** destroying dev never touches prod's monitoring, as separate cloud
   accounts would. A company with many environments would use one central platform.
 - **Limitations:** the load balancer, database and cache are single containers (in the cloud: managed, redundant
   services); a code change recreates all replicas at once (a rolling update would avoid the short outage); the
   Terraform state is local (in a team: remote, encrypted backend with locking); generated secrets are passed as
-  environment variables and visible with `docker inspect` (a secret manager would avoid it).
+  environment variables and visible with `docker inspect` (a secret manager would avoid it); the bucket contents are
+  not in the Terraform state, so a file deleted by hand only comes back when the folder changes.
 
 ---
 
