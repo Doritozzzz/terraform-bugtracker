@@ -74,7 +74,7 @@ module "web" {
     POSTGRES_DB       = module.database.database
     POSTGRES_USER     = module.database.user
     POSTGRES_PASSWORD = module.database.password
-    # Only used to report whether the static files are being served.
+    # Only used to report whether the images are being served.
     STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
     # Links shown in the System view; the app never calls them.
     GRAFANA_URL    = module.dashboards.url
@@ -94,7 +94,7 @@ module "load_balancer" {
   networks = [docker_network.frontend.name, docker_network.app.name]
   labels   = merge(local.labels, { service = "load-balancer" })
 
-  # The bucket is served under its own name (/static/...), so no path rewrite is needed.
+  # The bucket is served under its own name (/images/...), so no path rewrite is needed.
   routes = [{
     name        = "storage"
     path_prefix = "/${module.storage.bucket}/"
@@ -103,7 +103,7 @@ module "load_balancer" {
   }]
 }
 
-# Shared storage for the static files of the web: one copy for every replica,
+# Shared storage for the images of the web: one copy for every replica,
 # like S3 in the cloud. On the app network so the load balancer and the web
 # reach it, and on frontend so its console can be published.
 module "storage" {
@@ -111,8 +111,8 @@ module "storage" {
 
   name         = "${local.name_prefix}-storage"
   networks     = [docker_network.frontend.name, docker_network.app.name]
-  bucket       = "static"
-  source_dir   = "${path.module}/../../static"
+  bucket       = "images"
+  source_dir   = "${path.module}/../../images"
   console_port = var.storage_console_port
   labels       = merge(local.labels, { service = "storage" })
 }

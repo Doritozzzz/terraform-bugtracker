@@ -97,7 +97,7 @@ module "web" {
     CACHE_ENABLED     = "true"
     REDIS_HOST        = module.cache.host
     REDIS_PASSWORD    = module.cache.password
-    # Only used to report whether the static files are being served.
+    # Only used to report whether the images are being served.
     STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
     # Links shown in the System view; the app never calls them.
     GRAFANA_URL      = module.dashboards.url
@@ -120,7 +120,7 @@ module "load_balancer" {
   memory   = 128
   labels   = merge(local.labels, { service = "load-balancer" })
 
-  # The bucket is served under its own name (/static/...), so no path rewrite is needed.
+  # The bucket is served under its own name (/images/...), so no path rewrite is needed.
   routes = [{
     name        = "storage"
     path_prefix = "/${module.storage.bucket}/"
@@ -129,7 +129,7 @@ module "load_balancer" {
   }]
 }
 
-# Shared storage for the static files of the web: one copy for every replica,
+# Shared storage for the images of the web: one copy for every replica,
 # like S3 in the cloud. Only on the app network, where the load balancer and
 # the web reach it. The admin console is a dev tool and is not published here,
 # so MinIO stays off the frontend network and has no access to the outside.
@@ -138,8 +138,8 @@ module "storage" {
 
   name       = "${local.name_prefix}-storage"
   networks   = [docker_network.app.name]
-  bucket     = "static"
-  source_dir = "${path.module}/../../static"
+  bucket     = "images"
+  source_dir = "${path.module}/../../images"
   restart    = "unless-stopped"
   memory     = 256
   labels     = merge(local.labels, { service = "storage" })

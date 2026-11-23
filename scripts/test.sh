@@ -158,7 +158,7 @@ expect "the seeded data is there (dev)" 50006 "$(psql_q dev "SELECT count(*) FRO
 
 # ----------------------------------------------------- 4. cache and storage
 
-section "4. Cache (prod) and static files (MinIO)"
+section "4. Cache (prod), static files and images (MinIO)"
 expect "dev has the cache disabled" disabled "$(curl -s "$DEV/status" | json "d['services']['cache']['status']")"
 curl -s -o /dev/null -X POST "$PROD/api/incidents" -H 'Content-Type: application/json' \
   -d '{"title":"test.sh cache reset","system_name":"test","priority":"LOW"}'
@@ -167,10 +167,12 @@ expect "prod: the next read is a cache HIT" HIT "$(header x-cache "$PROD/api/inc
 
 for env in dev prod; do
   url=$(tfout "$env" app_url)
-  expect "$env: static files are served from the bucket" 200 "$(code "$url/static/styles.css")"
-  expect "$env: static files are revalidated (Cache-Control: no-cache)" no-cache "$(header cache-control "$url/static/styles.css")"
-  expect "$env: anonymous users cannot list the bucket" 403 "$(code "$url/static/")"
-  expect "$env: anonymous users cannot upload" 403 "$(code -X PUT --data x "$url/static/hack.txt")"
+  # CSS and JavaScript ship with the code; only the images live in the bucket.
+  expect "$env: CSS and JavaScript are served by the web replicas" "bugtracker-$env-web" "$(header x-served-by "$url/styles.css" | sed 's/-[0-9]*$//')"
+  expect "$env: images are served from the bucket" 200 "$(code "$url/images/critical.png")"
+  expect "$env: images are revalidated (Cache-Control: no-cache)" no-cache "$(header cache-control "$url/images/critical.png")"
+  expect "$env: anonymous users cannot list the bucket" 403 "$(code "$url/images/")"
+  expect "$env: anonymous users cannot upload" 403 "$(code -X PUT --data x "$url/images/hack.txt")"
 done
 expect "prod: MinIO publishes no port (no admin console)" "" "$(docker port bugtracker-prod-storage)"
 

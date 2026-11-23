@@ -1,7 +1,7 @@
 import { config } from './config.js';
 import { log } from './logger.js';
 
-// Object storage that serves the static files (MinIO in this project). The
+// Object storage that serves the images (MinIO in this project). The
 // web never reads from it, the load balancer does; the web only reports
 // whether it is alive, by calling its HTTP health endpoint.
 

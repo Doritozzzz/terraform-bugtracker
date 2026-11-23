@@ -10,8 +10,8 @@ module "storage" {
 
   name       = "myapp-storage"
   networks   = [docker_network.app.name]
-  bucket     = "static"
-  source_dir = "${path.module}/static"
+  bucket     = "images"
+  source_dir = "${path.module}/images"
   # console_port = 9001   # optional: publish the admin console on 127.0.0.1
 }
 

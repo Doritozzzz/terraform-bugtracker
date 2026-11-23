@@ -29,7 +29,7 @@ variable "networks" {
 }
 
 variable "routes" {
-  description = "Extra backends chosen by path prefix (e.g. /static/ to object storage). Anything else goes to backends."
+  description = "Extra backends chosen by path prefix (e.g. /images/ to object storage). Anything else goes to backends."
   type = list(object({
     name        = string
     path_prefix = string

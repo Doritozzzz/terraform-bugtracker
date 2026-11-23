@@ -36,14 +36,14 @@ graph LR
         W1["web-1"]
         W2["web-2"]
         W3["web-3"]
-        S3[("MinIO<br/>bucket: static")]
+        S3[("MinIO<br/>bucket: images")]
     end
     subgraph backend ["backend network (internal)"]
         DB[("PostgreSQL 18<br/>volume")]
         R[("Redis 8<br/>cache")]
     end
 
-    LB -->|"/static/*"| S3
+    LB -->|"/images/*"| S3
     LB -->|"everything else"| W1 & W2 & W3
     W1 & W2 & W3 --> DB
     W1 & W2 & W3 --> R
@@ -62,8 +62,8 @@ graph LR
 ```
 
 ### Request flow
-- **Static files:** the browser asks the load balancer for `/static/*`, which it serves straight from the MinIO
-  bucket, like a CDN in front of S3. The web replicas never touch them.
+- **Images:** the browser asks the load balancer for `/images/*`, which it serves straight from the MinIO bucket,
+  like a CDN in front of S3. The web replicas never touch them; CSS and JavaScript ship with the code.
 - **Everything else** goes to the web replicas with HAProxy's `static-rr` policy. Every request gets a request ID
   (`X-Request-ID`, a UUID) that appears in the load balancer log, in the replica log and in the response.
 - **Cache-aside (prod):** `GET /api/incidents` reads Redis first (`X-Cache: HIT`); on a miss it queries
@@ -136,7 +136,7 @@ make destroy ENV=prod   # delete everything of prod, data volumes included
 
 ```
 app/                     Express 5 web application (Dockerfile, /metrics on port 9464)
-static/                  CSS/JS uploaded to the MinIO bucket and served by the load balancer
+images/                  Priority pictures uploaded to the MinIO bucket and served by the load balancer
 db/init.sql              Schema + 50,006 seed incidents
 modules/                 Reusable Terraform modules (one per component, no project names inside)
 environments/dev|prod    One Terraform root per environment: main.tf, variables.tf, terraform.tfvars, outputs.tf
@@ -228,7 +228,7 @@ Searching a request ID in the *Logs* dashboard (here a 503 the load balancer ret
 3. **Container healthchecks:** `pg_isready` over TCP (healthy only after the seed finishes), `redis-cli ping`
    with auth, `mc ready` for MinIO, `/healthz` for HAProxy, `/-/ready` for Prometheus and Alertmanager.
 4. **Terraform waits** (`wait = true`) for healthy containers, so dependents start in order.
-5. A MinIO outage only degrades the app: pages opened then show a notice; data and API keep working.
+5. A MinIO outage only degrades the app: the priorities lose their images; data and API keep working.
 
 ---
 
@@ -260,7 +260,7 @@ make test-alerts     # alerting rules: syntax + promtool unit tests
 ```
 
 The suite covers code checks (fmt, validate, no secret in git), an empty second `plan`, load balancing between
-replicas, the cache, the static files and their permissions, container hardening, high availability, database
+replicas, the cache, the images and their permissions, container hardening, high availability, database
 persistence, logs and metrics per environment, and an alert from firing to resolved email.
 
 > **Full test execution log:** [docs/evidence/test-results.txt](docs/evidence/test-results.txt) (`72 passed, 0 failed`).
@@ -312,7 +312,7 @@ and points to what to look at in the browser. It takes about 3 minutes without p
 5. **Scaling out is changing one number:** `-var web_replicas=5` overrides `terraform.tfvars`, five replicas get
    traffic, and a normal `make up` returns to the three the code declares.
 6. **A replica fails, users notice nothing:** `make kill-web`, then 20 requests all answer 200.
-7. **Static files come from object storage**, served by the load balancer; the bucket cannot be listed.
+7. **Images come from object storage**, served by the load balancer; the bucket cannot be listed.
 8. **Every request can be traced:** its request ID, found in the load balancer log.
 9. **The alert reaches the team:** the email (and the Telegram message) about a minute later.
 10. **Recovery:** `make start-web`, and the replica is back in rotation.

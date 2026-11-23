@@ -79,7 +79,7 @@ async function statusHandler(req, res) {
   res.set('Cache-Control', 'no-store');
   // Without the database the application cannot work (503). Without the cache
   // (reads go to the database) or the object storage (the API still works,
-  // only new page loads miss their styles) it answers 200 as "degraded".
+  // only the images are missing) it answers 200 as "degraded".
   res.status(database.up ? 200 : 503).json({
     status: degraded ? 'degraded' : 'ok',
     instance: config.instance,

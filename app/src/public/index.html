@@ -5,19 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>Overview · Incident Tracker</title>
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/styles.css">
-  <script src="/static/theme.js"></script>
-  <script src="/static/app.js" defer></script>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="theme.js"></script>
+  <script src="app.js" defer></script>
 </head>
 <body data-loading>
-  <!-- Visible only if styles.css (served from object storage) fails to load:
-       the stylesheet hides it. Plain HTML, so it works without CSS or JS. -->
-  <p class="static-fallback" role="alert">
-    <strong>The page styles and scripts could not be loaded.</strong>
-    The static file storage (MinIO) is unavailable; the incident data is safe.
-    Reload the page in a moment.
-  </p>
   <a class="skip" href="#main">Skip to content</a>
 
   <header class="topbar">

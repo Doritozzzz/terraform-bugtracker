@@ -90,7 +90,7 @@ kill-cache: ## Stop Redis to watch the status change (ENV=prod)
 start-cache: ## Start Redis again (ENV=prod)
 	docker start $(PREFIX)-cache
 
-kill-storage: ## Stop MinIO: /static/ fails and the open page reports it (ENV=dev)
+kill-storage: ## Stop MinIO: /images/ fails and the open page reports it (ENV=dev)
 	docker stop $(PREFIX)-storage
 
 start-storage: ## Start MinIO again (ENV=dev)

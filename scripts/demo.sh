@@ -168,10 +168,10 @@ pause
 
 # ------------------------------------------------------ 7. object storage
 
-step "Static files come from object storage" \
-  "CSS and JavaScript live in a MinIO bucket, the local version of Amazon S3. The load balancer serves them straight from it, like a CDN, so the replicas never handle them."
-run "curl -s -D - -o /dev/null $APP/static/styles.css | grep -iE '^HTTP|^x-served-by|^cache-control'"
-run "curl -s -o /dev/null -w 'Listing the bucket: HTTP %{http_code}\n' $APP/static/"
+step "Images come from object storage" \
+  "The priority pictures live in a MinIO bucket, the local version of Amazon S3. The load balancer serves them straight from it, like a CDN, so the replicas never handle them; CSS and JavaScript ship with the code."
+run "curl -s -D - -o /dev/null $APP/images/critical.png | grep -iE '^HTTP|^content-type|^x-served-by'"
+run "curl -s -o /dev/null -w 'Listing the bucket: HTTP %{http_code}\n' $APP/images/"
 result "Anyone can download a file, nobody can list or change the bucket."
 pause
 

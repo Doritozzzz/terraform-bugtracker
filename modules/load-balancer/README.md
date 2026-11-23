@@ -16,7 +16,7 @@ module "load_balancer" {
 
   routes = [{                         # optional
     name        = "storage"
-    path_prefix = "/static/"
+    path_prefix = "/images/"
     servers     = [module.storage.backend]
     health_path = module.storage.health_path
   }]
@@ -56,7 +56,7 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 | labels | Docker labels for the containers, e.g. environment and service, used by monitoring to filter them. | `map(string)` | `{}` | no |
 | memory | Memory limit in MB. Null means no limit. | `number` | `null` | no |
 | restart | Docker restart policy: no, on-failure, always or unless-stopped. Null keeps the Docker default (no). | `string` | `null` | no |
-| routes | Extra backends chosen by path prefix (e.g. /static/ to object storage). Anything else goes to backends. | <pre>list(object({<br/>    name        = string<br/>    path_prefix = string<br/>    servers     = list(string)<br/>    health_path = string<br/>  }))</pre> | `[]` | no |
+| routes | Extra backends chosen by path prefix (e.g. /images/ to object storage). Anything else goes to backends. | <pre>list(object({<br/>    name        = string<br/>    path_prefix = string<br/>    servers     = list(string)<br/>    health_path = string<br/>  }))</pre> | `[]` | no |
 
 ## Outputs
 

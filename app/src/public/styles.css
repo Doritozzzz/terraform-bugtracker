@@ -90,8 +90,6 @@ button, input, select { font: inherit; color: inherit; }
   padding: 0.5rem 0.75rem; background: var(--primary); color: var(--primary-fg); border-radius: 8px;
 }
 .skip:focus { top: 0.75rem; }
-/* Notice in index.html for when this file cannot be loaded; with it loaded, hide it. */
-.static-fallback { display: none; }
 
 kbd {
   padding: 0 0.35rem;

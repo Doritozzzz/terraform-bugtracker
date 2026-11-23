@@ -26,7 +26,7 @@ const SERVICES = [
   { key: 'web', name: 'Web application', kind: 'Express' },
   { key: 'database', name: 'PostgreSQL', kind: 'Database' },
   { key: 'cache', name: 'Redis', kind: 'Cache' },
-  { key: 'storage', name: 'MinIO', kind: 'Static files' },
+  { key: 'storage', name: 'MinIO', kind: 'Images' },
 ];
 const SERVICE_STATE = { up: 'Operational', down: 'Unavailable', disabled: 'Disabled', unknown: 'Unknown' };
 // Grafana dashboards of the project; their uids are fixed in monitoring/dashboards.
@@ -513,7 +513,7 @@ function renderHealth() {
   if (web.state === 'down') [dot, text] = ['unknown', 'Server unreachable'];
   else if (database.state === 'down') [dot, text] = ['down', 'Database unavailable'];
   else if (cache.state === 'down') [dot, text] = ['warn', 'Cache unavailable (degraded)'];
-  else if (storage.state === 'down') [dot, text] = ['warn', 'Static files unavailable (degraded)'];
+  else if (storage.state === 'down') [dot, text] = ['warn', 'Images unavailable (degraded)'];
 
   $('#health-dot').className = `dot dot-${dot}`;
   $('#health-text').textContent = text;

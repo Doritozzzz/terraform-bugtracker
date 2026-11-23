@@ -265,7 +265,7 @@
     {
       "type": "stat",
       "title": "Requests per second",
-      "description": "Requests received by the load balancer: pages, API calls and static files.",
+      "description": "Requests received by the load balancer: pages, API calls, static files and images.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

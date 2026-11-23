@@ -120,8 +120,8 @@ groups:
         annotations:
           summary: "The web cannot reach MinIO"
           description: >-
-            Pages opened now load without their styles and scripts; the data and the API
-            are fine. Check whether the storage container is running.
+            Pages show the priorities without their images; the data and the API are
+            fine. Check whether the storage container is running.
           dashboard: /d/logs/bugtracker-logs?var-service=storage
 
   - name: containers
