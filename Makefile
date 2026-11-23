@@ -121,7 +121,7 @@ test-alerts: ## Check the alerting rules and run their unit tests
 	@docker run --rm -v "$(CURDIR)/monitoring/alerts:/alerts:ro" -w /alerts --entrypoint promtool $(PROMETHEUS_IMAGE) check rules bugtracker.rules.yml
 	@docker run --rm -v "$(CURDIR)/monitoring/alerts:/alerts:ro" -w /alerts --entrypoint promtool $(PROMETHEUS_IMAGE) test rules bugtracker.test.yml
 
-test: ## Run every verification from scratch (P1 suite, being migrated)
+test: ## Converge dev and prod and verify them end to end (FRESH=1: from nothing)
 	@bash scripts/test.sh
 
 demo: ## Run the guided demonstration (P1 version, being migrated)
