@@ -92,7 +92,15 @@ function svgEl(tag, attrs = {}, ...children) {
 }
 
 const tag = (label, key) => h('span', { class: `tag c-${key}`, text: label });
-const priorityTag = (p) => tag(PRIORITIES[p] ?? p, p.toLowerCase());
+// The priority picture comes from the object storage; alt is empty because
+// the name is written next to it.
+const priorityTag = (p) =>
+  h(
+    'span',
+    { class: `tag c-${p.toLowerCase()} has-img` },
+    h('img', { src: `/images/${p.toLowerCase()}.png`, alt: '', width: 14, height: 14 }),
+    PRIORITIES[p] ?? p,
+  );
 const statusTag = (s) => tag(STATUSES[s] ?? s, s.toLowerCase());
 
 const absoluteDate = (iso) =>
@@ -986,6 +994,23 @@ document.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('hashchange', route);
+
+// A picture that cannot be loaded (object storage down) is hidden instead of
+// showing a broken image; its tag falls back to the coloured dot. Load errors
+// do not bubble, hence the capture phase. Pictures in the HTML may have failed
+// before this script ran, so those are checked once here.
+function hideBrokenImage(img) {
+  img.hidden = true;
+  img.parentElement.classList.remove('has-img');
+}
+document.addEventListener(
+  'error',
+  (event) => {
+    if (event.target instanceof HTMLImageElement) hideBrokenImage(event.target);
+  },
+  true,
+);
+for (const img of document.images) if (img.complete && img.naturalWidth === 0) hideBrokenImage(img);
 
 // Relative times ("5 minutes ago") are refreshed in place, without redrawing.
 setInterval(() => {
