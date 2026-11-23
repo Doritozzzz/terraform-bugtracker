@@ -294,22 +294,26 @@ persistence, logs and metrics per environment, and an alert from firing to resol
 
 ## 11. Guided Demo (`make demo`)
 
-Eleven short steps on prod, one ENTER each. Every step says what it shows, prints each command before running it
-and points to what to look at in the browser. It takes about 2 minutes without pauses.
+Thirteen short steps on prod, one ENTER each. Every step says what it shows, prints each command before running it
+and points to what to look at in the browser. It takes about 3 minutes without pauses.
 
 1. **One command deploys everything:** `make up-all`, and a second plan has nothing to change.
 2. **Two environments side by side:** their URLs and containers.
 3. **Same modules, different settings:** the two `terraform.tfvars`.
 4. **The load balancer shares the requests** between the three replicas.
-5. **A replica fails, users notice nothing:** `make kill-web`, then 20 requests all answer 200.
-6. **Static files come from object storage**, served by the load balancer; the bucket cannot be listed.
-7. **Every request can be traced:** its request ID, found in the load balancer log.
-8. **The alert reaches the team:** the email (and the Telegram message) about a minute later.
-9. **Recovery:** `make start-web`, and the replica is back in rotation.
-10. **Secure by default:** ports, users and ignored secrets.
-11. **Everything is tested:** the alert rule tests and the result of `make test`.
+5. **Scaling out is changing one number:** `-var web_replicas=5` overrides `terraform.tfvars`, five replicas get
+   traffic, and a normal `make up` returns to the three the code declares.
+6. **A replica fails, users notice nothing:** `make kill-web`, then 20 requests all answer 200.
+7. **Static files come from object storage**, served by the load balancer; the bucket cannot be listed.
+8. **Every request can be traced:** its request ID, found in the load balancer log.
+9. **The alert reaches the team:** the email (and the Telegram message) about a minute later.
+10. **Recovery:** `make start-web`, and the replica is back in rotation.
+11. **Self-healing:** Docker restarts a crashed replica; a replica deleted by hand (drift) is found by
+    `terraform plan` and recreated by `apply`.
+12. **Secure by default:** ports, users and ignored secrets.
+13. **Everything is tested:** the alert rule tests and the result of `make test`.
 
-If the demo is stopped early, it starts the replica again.
+If the demo is stopped early, it starts the replica again and returns prod to its code.
 
 ---
 
