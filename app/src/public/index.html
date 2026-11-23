@@ -229,6 +229,12 @@
         </article>
       </div>
 
+      <!-- Filled from /status; stays hidden when no monitoring URL is configured. -->
+      <article id="monitoring" class="card section-gap" hidden>
+        <header class="card-head"><h2>Monitoring</h2><span class="sub">Metrics and logs of this environment, in a new tab</span></header>
+        <ul id="monitoring-links" class="card-body monitoring-links"></ul>
+      </article>
+
       <article class="card section-gap">
         <header class="card-head"><h2>Load balancing</h2><span id="lb-sub" class="sub">Live: replica that answered each background status check</span></header>
         <div class="card-body">

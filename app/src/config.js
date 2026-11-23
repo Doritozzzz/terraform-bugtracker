@@ -50,6 +50,12 @@ const url = (name) => {
 
 const storageHealthUrl = url('STORAGE_HEALTH_URL');
 
+// Optional browser links to the monitoring tools of this environment, shown
+// in the System view. Only links: the app never calls them.
+const monitoring = Object.fromEntries(
+  Object.entries({ grafana: url('GRAFANA_URL'), prometheus: url('PROMETHEUS_URL') }).filter(([, value]) => value),
+);
+
 export const config = {
   // Name of this replica. Docker sets the hostname of each container, so it
   // matches the container name shown by `docker ps`.
@@ -80,6 +86,7 @@ export const config = {
     : { enabled: false },
   // Object storage is only checked when its health URL is given.
   storage: storageHealthUrl ? { enabled: true, healthUrl: storageHealthUrl } : { enabled: false },
+  monitoring,
 };
 
 // Same shape as config but without any secret: this is the only version
@@ -105,4 +112,5 @@ export const describeConfig = () => ({
       }
     : { enabled: false },
   storage: config.storage,
+  monitoring: config.monitoring,
 });

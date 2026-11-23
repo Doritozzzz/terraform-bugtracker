@@ -28,6 +28,9 @@ const SERVICES = [
   { key: 'storage', name: 'MinIO', kind: 'Static files' },
 ];
 const SERVICE_STATE = { up: 'Operational', down: 'Unavailable', disabled: 'Disabled', unknown: 'Unknown' };
+// Grafana dashboards of the project; their uids are fixed in monitoring/dashboards.
+const GRAFANA_STATUS = '/d/status/bugtracker-status';
+const GRAFANA_LOGS = '/d/logs/bugtracker-logs';
 
 const state = {
   incidents: [],
@@ -49,6 +52,7 @@ const state = {
   lastCheck: null,
   hits: [],
   replicaColors: new Map(),
+  monitoring: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -456,6 +460,8 @@ function buildServiceCards() {
         h('p', { class: 'svc-state', text: 'Checking…' }),
         h('p', { class: 'svc-latency mono', text: '–' }),
         h('div', { class: 'svc-spark' }),
+        // Shown by renderMonitoring when Grafana is configured.
+        h('a', { class: 'link svc-logs', target: '_blank', rel: 'noopener', hidden: true, text: 'Logs ↗' }),
       ),
     ),
   );
@@ -510,6 +516,33 @@ function renderHealth() {
 
   $('#health-dot').className = `dot dot-${dot}`;
   $('#health-text').textContent = text;
+}
+
+const monitoringLink = (href, title, description) =>
+  h('li', {}, h('a', { href, target: '_blank', rel: 'noopener', text: `${title} ↗` }), h('span', { class: 'sub', text: description }));
+
+// Links to the monitoring tools, built once from the URLs /status reports. The
+// service names match the service label of the logs, so each card can open
+// the logs of its own service; a disabled service (no cache in dev) has none.
+function renderMonitoring(links, services) {
+  const items = [];
+  if (links.grafana) {
+    items.push(
+      monitoringLink(links.grafana + GRAFANA_STATUS, 'Status dashboard', 'Availability, latency and the health and resources of every service'),
+      monitoringLink(links.grafana + GRAFANA_LOGS, 'Logs dashboard', 'Every container log, searchable by text or request ID'),
+    );
+    for (const { key } of SERVICES) {
+      if (services[key]?.status === 'disabled') continue;
+      const link = $(`[data-service="${key}"] .svc-logs`);
+      link.href = `${links.grafana}${GRAFANA_LOGS}?var-service=${key}`;
+      link.hidden = false;
+    }
+  }
+  if (links.prometheus) {
+    items.push(monitoringLink(links.prometheus, 'Prometheus', 'Raw metrics and the state of every scrape target'));
+  }
+  $('#monitoring-links').replaceChildren(...items);
+  $('#monitoring').hidden = items.length === 0;
 }
 
 function renderDeployment() {
@@ -677,6 +710,12 @@ function applyStatus(status, roundTrip) {
   badge.textContent = status.environment === 'production' ? 'Production' : 'Development';
   badge.className = `tag hide-sm c-${status.environment === 'production' ? 'violet' : 'info'}`;
   $('#d-env').textContent = badge.textContent;
+
+  // The links never change while the page is open: render them only once.
+  if (status.monitoring && !state.monitoring) {
+    state.monitoring = status.monitoring;
+    renderMonitoring(status.monitoring, status.services);
+  }
 
   commit({
     web: { state: 'up', latency: roundTrip },

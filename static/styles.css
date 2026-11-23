@@ -314,6 +314,12 @@ main { padding-bottom: 2rem; }
 .svc-state { margin-top: 0.9rem; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; }
 .svc-latency { color: var(--muted); }
 .svc-spark { margin-top: 0.5rem; color: var(--c); }
+.svc-logs { display: inline-block; margin-top: 0.5rem; }
+
+/* Monitoring links */
+.monitoring-links { display: grid; gap: 0.75rem; }
+.monitoring-links li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; }
+.monitoring-links a { font-weight: 600; }
 
 /* Facts */
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 0.65rem 1.5rem; }

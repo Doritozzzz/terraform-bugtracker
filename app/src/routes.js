@@ -87,6 +87,8 @@ async function statusHandler(req, res) {
     uptimeSeconds: Math.round(process.uptime()),
     timestamp: new Date().toISOString(),
     services,
+    // Links for the System view; empty when no monitoring URL is configured.
+    monitoring: config.monitoring,
   });
 }
 

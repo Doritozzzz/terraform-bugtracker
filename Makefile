@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 .PHONY: help init fmt validate plan apply up up-all output stop start destroy recreate-db ps \
-        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage status test demo dist
+        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage status urls passwords test demo dist
 
 # Environment for the Terraform targets: dev (default) or prod, e.g. make up ENV=prod.
 ENV ?= dev
@@ -99,6 +99,20 @@ status: ## Show /status of dev and prod
 	  { [ -n "$$url" ] && curl -s -m 5 "$$url/status"; } || printf 'not running'; \
 	  echo; \
 	done
+
+# Only the non-secret outputs, so the screen can be shown during a demo.
+urls: ## Show the URLs and users of dev and prod (passwords: make passwords)
+	@for env in dev prod; do \
+	  echo "$$env:"; \
+	  terraform -chdir=environments/$$env output 2>/dev/null | grep -v '<sensitive>' | sed 's/^/  /' | grep . || echo '  not deployed'; \
+	done
+
+passwords: ## Show the generated passwords of dev and prod
+	@for env in dev prod; do \
+	  for name in grafana_password storage_console_password; do \
+	    value=$$(terraform -chdir=environments/$$env output -raw $$name 2>/dev/null) && echo "$$env $$name: $$value"; \
+	  done; \
+	done; true
 
 test: ## Run every verification from scratch (P1 suite, being migrated)
 	@bash scripts/test.sh

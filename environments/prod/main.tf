@@ -95,6 +95,8 @@ module "web" {
     REDIS_PASSWORD    = module.cache.password
     # Only used to report whether the static files are being served.
     STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
+    # Links shown in the System view; the app never calls them.
+    GRAFANA_URL = module.dashboards.url
   }
 }
 
