@@ -11,12 +11,12 @@ resource "docker_image" "haproxy" {
   keep_locally = true
 }
 
-# The config is rendered to a file and bind-mounted read-only. The provider's
-# `upload` block cannot be used: it copies into the container root, which is
-# read-only. Each environment writes to its own folder, so dev and prod never
-# share a file.
+# The config is rendered to a file and its folder is bind-mounted read-only.
+# The provider's `upload` block cannot be used: it copies into the container
+# root, which is read-only. Each environment writes to its own folder, so dev
+# and prod never share a file.
 resource "local_file" "config" {
-  filename = abspath("${path.root}/.generated/${var.name}.cfg")
+  filename = abspath("${path.root}/.generated/${var.name}/haproxy.cfg")
   content = templatefile("${path.module}/haproxy.cfg.tftpl", {
     listen_port  = local.listen_port
     metrics_port = local.metrics_port
@@ -64,9 +64,12 @@ resource "docker_container" "haproxy" {
     drop = ["ALL"]
   }
 
+  # The folder, not the file: a single mounted file stays tied to the file it
+  # pointed to when the container started, so a rewritten config would never
+  # be seen. The image command already reads haproxy.cfg from this folder.
   volumes {
-    host_path      = local_file.config.filename
-    container_path = "/usr/local/etc/haproxy/haproxy.cfg"
+    host_path      = dirname(local_file.config.filename)
+    container_path = "/usr/local/etc/haproxy"
     read_only      = true
   }
 
@@ -93,9 +96,19 @@ resource "docker_container" "haproxy" {
 
   # terraform apply returns once HAProxy is accepting traffic.
   wait = true
+}
 
-  # The mounted file is read only at startup, so a new config needs a new container.
-  lifecycle {
-    replace_triggered_by = [local_file.config]
+# A new config (more replicas, other routes) is loaded without replacing the
+# container. The image runs HAProxy in master-worker mode, where SIGUSR2 makes
+# the master start new workers with the new config while the old ones finish
+# their requests; the listening port stays open. The check comes first because
+# a reload with an invalid file is only logged: this way apply fails, HAProxy
+# keeps the old config and the next apply tries again. It also runs once after
+# the container is created, a harmless reload of the same file.
+resource "terraform_data" "reload" {
+  triggers_replace = local_file.config.content_sha256
+
+  provisioner "local-exec" {
+    command = "docker exec ${docker_container.haproxy.name} haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg && docker kill --signal USR2 ${docker_container.haproxy.name}"
   }
 }

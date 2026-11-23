@@ -138,7 +138,7 @@ pause
 # ------------------------------------------------------------ 5. scaling
 
 step "Scaling out is changing one number" \
-  "Prod declares three replicas in terraform.tfvars. A -var on the command line takes precedence over that file, so we ask for five without editing it. Terraform adds two replicas and replaces the load balancer and Prometheus, which read their config only when they start. That costs a few seconds without the load balancer, the price of running it as a single container; a managed cloud load balancer adds targets without a gap."
+  "Prod declares three replicas in terraform.tfvars. A -var on the command line takes precedence over that file, so we ask for five without editing it. Terraform adds two replicas and the load balancer reloads its new config without closing its port, so no request fails. Prometheus is replaced, as it reads its config only when it starts."
 run "terraform -chdir=environments/prod plan -input=false -no-color -var web_replicas=5 -out=tfplan | grep -E '^  # |^Plan:'"
 DRIFTED=1
 run "make --no-print-directory apply ENV=prod | grep 'Apply complete'"

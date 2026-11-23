@@ -26,7 +26,7 @@ module "load_balancer" {
 ## Notes
 
 - `balance` defaults to `static-rr`: strict turns, and a recovered backend is back in rotation at once.
-- The config is rendered to `<root>/.generated/<name>.cfg` and mounted read-only; a change replaces the container (HAProxy reads it only at startup).
+- The config is rendered to `<root>/.generated/<name>/haproxy.cfg` and its folder is mounted read-only. A change (more backends, other routes) is checked and then loaded with a graceful reload (`SIGUSR2`), without replacing the container or closing the port. Needs the `docker` CLI where Terraform runs.
 - Backends are resolved through Docker's DNS, so recreated containers with a new IP are found again.
 - Every request gets an `X-Request-ID` (UUID) sent to the backend and back to the client, also on errors HAProxy generates itself.
 - Metrics and `/healthz` listen on port 8405, which is never published (`metrics_target` output).
