@@ -78,7 +78,11 @@ loki() {
 }
 loki_lines() { loki "$1" "$2" | json "sum(len(s['values']) for s in d['data']['result'])"; }
 
-grafana() { curl -s -m 10 -u "admin:$(tfout "$1" grafana_password)" "$(tfout "$1" grafana_url)$2"; }
+# Grafana API, called from inside its container (it publishes no port).
+grafana() { docker exec "bugtracker-$1-grafana" wget -qO- "http://admin:$(tfout "$1" grafana_password)@127.0.0.1:3000$2"; }
+
+# Containers of an environment that publish a port on the host.
+published() { docker ps --filter "label=project=bugtracker" --filter "label=environment=$1" --format '{{.Names}} {{.Ports}}' | grep 127.0.0.1 | cut -d' ' -f1 | sort | paste -sd' '; }
 
 psql_q() { docker exec "bugtracker-$1-db" sh -c "psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -tAc \"$2\""; }
 
@@ -181,6 +185,14 @@ expect "prod: MinIO publishes no port (no admin console)" "" "$(docker port bugt
 section "5. Hardening"
 published=$(docker ps --filter label=project=bugtracker --format '{{.Ports}}' | tr ',' '\n' | grep -- '->' | grep -vc '127.0.0.1:')
 expect "every published port listens on 127.0.0.1 only" 0 "$published"
+
+# The admin tools publish no port: the gateway, with its login, is the only way in.
+expect "dev publishes only the app and the admin gateway" "bugtracker-dev-admin bugtracker-dev-lb" "$(published dev)"
+ADMIN_DEV=$(tfout dev admin_url)
+expect "dev: the admin gateway asks for its login" 401 "$(code "$ADMIN_DEV/grafana/")"
+for path in grafana/api/health prometheus/-/ready minio/; do
+  expect "dev: with the login, /$path answers through the gateway" 200 "$(code -u "admin:$(tfout dev admin_password)" "$ADMIN_DEV/$path")"
+done
 not_ro=$(for c in $(running dev; running prod); do docker inspect -f '{{.Name}} {{.HostConfig.ReadonlyRootfs}}' "$c"; done | grep -c false)
 expect "every container has a read-only root filesystem" 0 "$not_ro"
 caps=$(for c in $(running dev; running prod); do docker inspect -f '{{.Name}} {{.HostConfig.CapDrop}} {{.HostConfig.SecurityOpt}}' "$c"; done | grep -vc 'ALL.*no-new-privileges')

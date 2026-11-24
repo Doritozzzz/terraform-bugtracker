@@ -240,7 +240,7 @@ pause
 # -------------------------------------------------------------- 13. tests
 
 step "Everything is tested" \
-  "The alert rules have unit tests, and make test checks both environments end to end in 79 checks, 80 when it deploys from nothing (that full run is in docs/evidence)."
+  "The alert rules have unit tests, and make test checks both environments end to end in 84 checks, 85 when it deploys from nothing (that full run is in docs/evidence)."
 run "make --no-print-directory test-alerts"
 run "tail -n 1 docs/evidence/test-results.txt"
 if mail_has 'RESOLVED.*WebReplicaDown'; then result "And the 'resolved' email has already arrived."; fi

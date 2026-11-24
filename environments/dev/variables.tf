@@ -35,17 +35,7 @@ variable "lb_port" {
   type        = number
 }
 
-variable "storage_console_port" {
-  description = "Port on 127.0.0.1 where the MinIO console is served."
-  type        = number
-}
-
-variable "prometheus_port" {
-  description = "Port on 127.0.0.1 where the Prometheus web UI is served."
-  type        = number
-}
-
-variable "grafana_port" {
-  description = "Port on 127.0.0.1 where Grafana is served."
+variable "admin_port" {
+  description = "Port on 127.0.0.1 of the admin gateway, the only way in to Grafana, Prometheus and the MinIO console."
   type        = number
 }

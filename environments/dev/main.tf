@@ -8,11 +8,22 @@ locals {
     project     = var.project
     environment = var.environment
   }
+
+  # The admin gateway; each tool builds its links with its path under it.
+  admin_url = "http://127.0.0.1:${var.admin_port}"
 }
 
-# Network with access to the outside. Only containers that publish a port join it.
+# Network with access to the outside, for the only two containers that
+# publish a port: the load balancer (the app) and the admin gateway.
 resource "docker_network" "frontend" {
   name = "${local.name_prefix}-frontend"
+}
+
+# Internal network of the admin tools: only people reach it, and only through
+# the admin gateway. The tools keep their data flows on app and monitoring.
+resource "docker_network" "admin" {
+  name     = "${local.name_prefix}-admin"
+  internal = true
 }
 
 # Internal network: no access to the outside. Only the web, PostgreSQL and Redis join it.
@@ -76,8 +87,8 @@ module "web" {
     POSTGRES_PASSWORD = module.database.password
     # Only used to report whether the images are being served.
     STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
-    # Links shown in the System view; the app never calls them.
-    GRAFANA_URL    = module.dashboards.url
+    # Links shown in the System view, through the admin gateway; the app never calls them.
+    GRAFANA_URL    = "${local.admin_url}/grafana"
     PROMETHEUS_URL = module.metrics_store.url
   }
 }
@@ -105,16 +116,16 @@ module "load_balancer" {
 
 # Shared storage for the images of the web: one copy for every replica,
 # like S3 in the cloud. On the app network so the load balancer and the web
-# reach it, and on frontend so its console can be published.
+# reach it, and on admin for its console.
 module "storage" {
   source = "../../modules/object-storage"
 
-  name         = "${local.name_prefix}-storage"
-  networks     = [docker_network.frontend.name, docker_network.app.name]
-  bucket       = "images"
-  source_dir   = "${path.module}/../../images"
-  console_port = var.storage_console_port
-  labels       = merge(local.labels, { service = "storage" })
+  name        = "${local.name_prefix}-storage"
+  networks    = [docker_network.app.name, docker_network.admin.name]
+  bucket      = "images"
+  source_dir  = "${path.module}/../../images"
+  console_url = "${local.admin_url}/minio/"
+  labels      = merge(local.labels, { service = "storage" })
 }
 
 # Central log store: every container log of this environment ends up here.
@@ -153,10 +164,9 @@ module "metrics_store" {
   source = "../../modules/metrics-store"
 
   name = "${local.name_prefix}-prometheus"
-  # app to scrape the load balancer and the replicas; frontend only to publish
-  # the web UI on the host (a dev tool, like the MinIO console).
-  networks = [docker_network.monitoring.name, docker_network.app.name, docker_network.frontend.name]
-  port     = var.prometheus_port
+  # app to scrape the load balancer and the replicas; admin for its web UI.
+  networks     = [docker_network.monitoring.name, docker_network.app.name, docker_network.admin.name]
+  external_url = "${local.admin_url}/prometheus/"
 
   scrape_jobs = [
     {
@@ -188,9 +198,9 @@ module "dashboards" {
   source = "../../modules/dashboards"
 
   name = "${local.name_prefix}-grafana"
-  # frontend only to publish its port on the host.
-  networks = [docker_network.monitoring.name, docker_network.frontend.name]
-  port     = var.grafana_port
+  # monitoring to read the data sources; admin for its web UI.
+  networks = [docker_network.monitoring.name, docker_network.admin.name]
+  root_url = "${local.admin_url}/grafana/"
 
   datasources = [
     { uid = "prometheus", name = "Prometheus", type = "prometheus", url = module.metrics_store.internal_url, default = true },
@@ -217,4 +227,20 @@ module "dashboards" {
   home_dashboard = "status.json"
 
   labels = merge(local.labels, { service = "dashboards" })
+}
+
+# The only way in to the admin tools: one port with a login, every tool under
+# its path. frontend to publish the port, admin to reach the tools.
+module "admin_gateway" {
+  source = "../../modules/admin-gateway"
+
+  name     = "${local.name_prefix}-admin"
+  port     = var.admin_port
+  networks = [docker_network.frontend.name, docker_network.admin.name]
+  routes = [
+    { name = "grafana", path_prefix = "/grafana/", server = module.dashboards.backend },
+    { name = "prometheus", path_prefix = "/prometheus/", server = module.metrics_store.backend },
+    { name = "minio", path_prefix = "/minio/", server = module.storage.console_backend },
+  ]
+  labels = merge(local.labels, { service = "admin-gateway" })
 }

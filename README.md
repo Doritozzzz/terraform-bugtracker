@@ -16,7 +16,7 @@ A complete, production-style infrastructure for an IT incident tracker (Node.js,
 code with **Terraform** and run on Docker as a local cloud. One command brings up a development and a production
 environment side by side: a load balancer in front of replicated web servers, S3-compatible object storage, and
 observability with metrics, centralized logs, dashboards and alerts that reach email and Telegram. Every module is
-reusable, every container is hardened, and an end-to-end suite of 79 checks proves it all works.
+reusable, every container is hardened, and an end-to-end suite of 84 checks proves it all works.
 
 ---
 
@@ -258,7 +258,7 @@ Searching a request ID in the *Logs* dashboard (here a 503 the load balancer ret
 ## 9. Verification & Automated Tests
 
 ```bash
-make test            # converge both environments, then 79 checks (about 5 minutes)
+make test            # converge both environments, then 84 checks (about 5 minutes)
 FRESH=1 make test    # destroy everything first and deploy from nothing
 make test-alerts     # alerting rules: syntax + promtool unit tests
 ```

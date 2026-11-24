@@ -123,7 +123,7 @@ urls: ## Show the URLs and users of dev and prod (passwords: make passwords)
 
 passwords: ## Show the generated passwords of dev and prod
 	@for env in dev prod; do \
-	  for name in grafana_password storage_console_password; do \
+	  for name in admin_password grafana_password storage_console_password; do \
 	    value=$$(terraform -chdir=environments/$$env output -raw $$name 2>/dev/null) && echo "$$env $$name: $$value"; \
 	  done; \
 	done; true
