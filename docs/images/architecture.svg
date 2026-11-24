@@ -1,0 +1,257 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1110" viewBox="0 0 1720 1110" font-family="DejaVu Sans, Arial, sans-serif">
+<rect width="1720" height="1110" fill="#ffffff"/>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#495057"/></marker></defs>
+<text x="40" y="36" font-size="22" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Network architecture · prod</text>
+<text x="40" y="58" font-size="13" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Real networks of bugtracker-prod (docker network inspect). A dot = the container joins that network; a line crossing without a dot = it does not.</text>
+<rect x="170" y="80" width="1080" height="46" rx="8" fill="#f1f3f5" stroke="#495057" stroke-width="1.5" />
+<text x="185" y="100" font-size="13" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">YOUR MACHINE (host) · browser on 127.0.0.1</text>
+<text x="185" y="118" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Only 2 ports, both on 127.0.0.1: :8080 the app · :8081 the admin gateway (login) → every admin tool behind it</text>
+<rect x="1300" y="80" width="380" height="46" rx="8" fill="#fff4e6" stroke="#f08c00" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text x="1315" y="100" font-size="13" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">INTERNET</text>
+<text x="1315" y="118" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">api.telegram.org:443 (alert notifications)</text>
+<rect x="170" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="212.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Mailpit</text>
+<text x="212.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">alert mailbox</text>
+<text x="212.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">/mail/</text>
+<rect x="262" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="304.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Alertmanager</text>
+<text x="304.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">notifies alerts</text>
+<text x="304.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">/alertmanager/</text>
+<rect x="354" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="396.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Grafana</text>
+<text x="396.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">own login</text>
+<text x="396.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">/grafana/</text>
+<rect x="446" y="250" width="84" height="62" rx="8" fill="#fff0f6" stroke="#c2255c" stroke-width="2.5" />
+<text x="488.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Admin gateway</text>
+<text x="488.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">HAProxy + login</text>
+<text x="488.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">:8081</text>
+<rect x="538" y="250" width="84" height="62" rx="8" fill="#e7f5ff" stroke="#1c7ed6" stroke-width="2.5" />
+<text x="580.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Load balancer</text>
+<text x="580.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">HAProxy :8080</text>
+<text x="580.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">metrics :8405</text>
+<rect x="630" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="672.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">MinIO</text>
+<text x="672.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">S3 :9000</text>
+<text x="672.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">console /minio/</text>
+<rect x="722" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="764.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Prometheus</text>
+<text x="764.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">metrics, rules</text>
+<text x="764.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">/prometheus/</text>
+<rect x="814" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="856.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">web-1</text>
+<text x="856.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">app :3000</text>
+<text x="856.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">metrics :9464</text>
+<rect x="906" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="948.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">web-2</text>
+<text x="948.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">app :3000</text>
+<text x="948.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">metrics :9464</text>
+<rect x="998" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="1040.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">web-3</text>
+<text x="1040.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">app :3000</text>
+<text x="1040.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">metrics :9464</text>
+<rect x="1090" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="1132.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">PostgreSQL</text>
+<text x="1132.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">:5432</text>
+<rect x="1182" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="1224.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Redis</text>
+<text x="1224.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">cache :6379</text>
+<rect x="1274" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="1316.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Loki</text>
+<text x="1316.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">logs :3100</text>
+<rect x="1366" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="1408.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">cAdvisor</text>
+<text x="1408.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">CPU/memory</text>
+<text x="1408.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">host mounts :ro</text>
+<rect x="1458" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="1500.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Alloy</text>
+<text x="1500.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">collects logs</text>
+<text x="1500.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">:12345</text>
+<rect x="1550" y="250" width="84" height="62" rx="8" fill="#ffffff" stroke="#343a40" stroke-width="1.5" />
+<text x="1592.0" y="268" font-size="11" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">Docker API</text>
+<text x="1592.0" y="282" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">proxy :2375</text>
+<text x="1592.0" y="296" font-size="10" font-weight="normal" fill="#495057" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">read-only</text>
+<line x1="40" y1="380" x2="1690" y2="380" stroke="#e8590c" stroke-width="5" stroke-dasharray="10 5"/>
+<rect x="40" y="367" width="118" height="26" rx="13" fill="#e8590c" stroke="#e8590c" stroke-width="1.5" />
+<text x="99" y="384" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">frontend</text>
+<text x="1690" y="372" font-size="10" font-weight="normal" fill="#e8590c" text-anchor="end" stroke="#fff" stroke-width="3" paint-order="stroke">not internal · the only two ways in (published ports)</text>
+<line x1="40" y1="420" x2="1690" y2="420" stroke="#c2255c" stroke-width="5"/>
+<rect x="40" y="407" width="118" height="26" rx="13" fill="#c2255c" stroke="#c2255c" stroke-width="1.5" />
+<text x="99" y="424" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">admin</text>
+<text x="1690" y="412" font-size="10" font-weight="normal" fill="#c2255c" text-anchor="end" stroke="#fff" stroke-width="3" paint-order="stroke">internal · management plane: people → admin tools</text>
+<line x1="40" y1="460" x2="1690" y2="460" stroke="#1c7ed6" stroke-width="5"/>
+<rect x="40" y="447" width="118" height="26" rx="13" fill="#1c7ed6" stroke="#1c7ed6" stroke-width="1.5" />
+<text x="99" y="464" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">app</text>
+<text x="1690" y="452" font-size="10" font-weight="normal" fill="#1c7ed6" text-anchor="end" stroke="#fff" stroke-width="3" paint-order="stroke">internal · application traffic</text>
+<line x1="40" y1="500" x2="1690" y2="500" stroke="#7048e8" stroke-width="5"/>
+<rect x="40" y="487" width="118" height="26" rx="13" fill="#7048e8" stroke="#7048e8" stroke-width="1.5" />
+<text x="99" y="504" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">backend</text>
+<text x="1690" y="492" font-size="10" font-weight="normal" fill="#7048e8" text-anchor="end" stroke="#fff" stroke-width="3" paint-order="stroke">internal · data</text>
+<line x1="40" y1="540" x2="1690" y2="540" stroke="#0ca678" stroke-width="5"/>
+<rect x="40" y="527" width="118" height="26" rx="13" fill="#0ca678" stroke="#0ca678" stroke-width="1.5" />
+<text x="99" y="544" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">monitoring</text>
+<text x="1690" y="532" font-size="10" font-weight="normal" fill="#0ca678" text-anchor="end" stroke="#fff" stroke-width="3" paint-order="stroke">internal · observability data plane</text>
+<line x1="40" y1="580" x2="1690" y2="580" stroke="#f08c00" stroke-width="5" stroke-dasharray="10 5"/>
+<rect x="40" y="567" width="118" height="26" rx="13" fill="#f08c00" stroke="#f08c00" stroke-width="1.5" />
+<text x="99" y="584" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">egress</text>
+<text x="1690" y="572" font-size="10" font-weight="normal" fill="#f08c00" text-anchor="end" stroke="#fff" stroke-width="3" paint-order="stroke">not internal · way out only, no published port</text>
+<line x1="40" y1="620" x2="1690" y2="620" stroke="#868e96" stroke-width="5"/>
+<rect x="40" y="607" width="118" height="26" rx="13" fill="#868e96" stroke="#868e96" stroke-width="1.5" />
+<text x="99" y="624" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">docker-api</text>
+<text x="1690" y="612" font-size="10" font-weight="normal" fill="#868e96" text-anchor="end" stroke="#fff" stroke-width="3" paint-order="stroke">internal · read-only Docker API for the log collector</text>
+<line x1="212.0" y1="312" x2="212.0" y2="540" stroke="#495057" stroke-width="1.5"/>
+<circle cx="212.0" cy="420" r="7" fill="#c2255c" stroke="#fff" stroke-width="2"/>
+<circle cx="212.0" cy="540" r="7" fill="#0ca678" stroke="#fff" stroke-width="2"/>
+<line x1="304.0" y1="312" x2="304.0" y2="580" stroke="#495057" stroke-width="1.5"/>
+<circle cx="304.0" cy="420" r="7" fill="#c2255c" stroke="#fff" stroke-width="2"/>
+<circle cx="304.0" cy="540" r="7" fill="#0ca678" stroke="#fff" stroke-width="2"/>
+<circle cx="304.0" cy="580" r="7" fill="#f08c00" stroke="#fff" stroke-width="2"/>
+<line x1="396.0" y1="312" x2="396.0" y2="540" stroke="#495057" stroke-width="1.5"/>
+<circle cx="396.0" cy="420" r="7" fill="#c2255c" stroke="#fff" stroke-width="2"/>
+<circle cx="396.0" cy="540" r="7" fill="#0ca678" stroke="#fff" stroke-width="2"/>
+<line x1="488.0" y1="312" x2="488.0" y2="420" stroke="#495057" stroke-width="1.5"/>
+<circle cx="488.0" cy="380" r="7" fill="#e8590c" stroke="#fff" stroke-width="2"/>
+<circle cx="488.0" cy="420" r="7" fill="#c2255c" stroke="#fff" stroke-width="2"/>
+<line x1="580.0" y1="312" x2="580.0" y2="460" stroke="#495057" stroke-width="1.5"/>
+<circle cx="580.0" cy="380" r="7" fill="#e8590c" stroke="#fff" stroke-width="2"/>
+<circle cx="580.0" cy="460" r="7" fill="#1c7ed6" stroke="#fff" stroke-width="2"/>
+<line x1="672.0" y1="312" x2="672.0" y2="460" stroke="#495057" stroke-width="1.5"/>
+<circle cx="672.0" cy="420" r="7" fill="#c2255c" stroke="#fff" stroke-width="2"/>
+<circle cx="672.0" cy="460" r="7" fill="#1c7ed6" stroke="#fff" stroke-width="2"/>
+<line x1="764.0" y1="312" x2="764.0" y2="540" stroke="#495057" stroke-width="1.5"/>
+<circle cx="764.0" cy="420" r="7" fill="#c2255c" stroke="#fff" stroke-width="2"/>
+<circle cx="764.0" cy="460" r="7" fill="#1c7ed6" stroke="#fff" stroke-width="2"/>
+<circle cx="764.0" cy="540" r="7" fill="#0ca678" stroke="#fff" stroke-width="2"/>
+<line x1="856.0" y1="312" x2="856.0" y2="500" stroke="#495057" stroke-width="1.5"/>
+<circle cx="856.0" cy="460" r="7" fill="#1c7ed6" stroke="#fff" stroke-width="2"/>
+<circle cx="856.0" cy="500" r="7" fill="#7048e8" stroke="#fff" stroke-width="2"/>
+<line x1="948.0" y1="312" x2="948.0" y2="500" stroke="#495057" stroke-width="1.5"/>
+<circle cx="948.0" cy="460" r="7" fill="#1c7ed6" stroke="#fff" stroke-width="2"/>
+<circle cx="948.0" cy="500" r="7" fill="#7048e8" stroke="#fff" stroke-width="2"/>
+<line x1="1040.0" y1="312" x2="1040.0" y2="500" stroke="#495057" stroke-width="1.5"/>
+<circle cx="1040.0" cy="460" r="7" fill="#1c7ed6" stroke="#fff" stroke-width="2"/>
+<circle cx="1040.0" cy="500" r="7" fill="#7048e8" stroke="#fff" stroke-width="2"/>
+<line x1="1132.0" y1="312" x2="1132.0" y2="500" stroke="#495057" stroke-width="1.5"/>
+<circle cx="1132.0" cy="500" r="7" fill="#7048e8" stroke="#fff" stroke-width="2"/>
+<line x1="1224.0" y1="312" x2="1224.0" y2="500" stroke="#495057" stroke-width="1.5"/>
+<circle cx="1224.0" cy="500" r="7" fill="#7048e8" stroke="#fff" stroke-width="2"/>
+<line x1="1316.0" y1="312" x2="1316.0" y2="540" stroke="#495057" stroke-width="1.5"/>
+<circle cx="1316.0" cy="540" r="7" fill="#0ca678" stroke="#fff" stroke-width="2"/>
+<line x1="1408.0" y1="312" x2="1408.0" y2="540" stroke="#495057" stroke-width="1.5"/>
+<circle cx="1408.0" cy="540" r="7" fill="#0ca678" stroke="#fff" stroke-width="2"/>
+<line x1="1500.0" y1="312" x2="1500.0" y2="620" stroke="#495057" stroke-width="1.5"/>
+<circle cx="1500.0" cy="540" r="7" fill="#0ca678" stroke="#fff" stroke-width="2"/>
+<circle cx="1500.0" cy="620" r="7" fill="#868e96" stroke="#fff" stroke-width="2"/>
+<line x1="1592.0" y1="312" x2="1592.0" y2="620" stroke="#495057" stroke-width="1.5"/>
+<circle cx="1592.0" cy="620" r="7" fill="#868e96" stroke="#fff" stroke-width="2"/>
+<line x1="488.0" y1="126" x2="488.0" y2="248" stroke="#495057" stroke-width="2" marker-end="url(#a)"/>
+<rect x="444.0" y="150" width="88" height="40" rx="6" fill="#ffffff" stroke="#2b8a3e" stroke-width="1.5" />
+<text x="488.0" y="166" font-size="12" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">127.0.0.1:8081</text>
+<text x="488.0" y="182" font-size="10" font-weight="bold" fill="#2b8a3e" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">login</text>
+<line x1="580.0" y1="126" x2="580.0" y2="248" stroke="#495057" stroke-width="2" marker-end="url(#a)"/>
+<rect x="536.0" y="150" width="88" height="40" rx="6" fill="#ffffff" stroke="#2b8a3e" stroke-width="1.5" />
+<text x="580.0" y="166" font-size="12" font-weight="bold" fill="#212529" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">127.0.0.1:8080</text>
+<text x="580.0" y="182" font-size="10" font-weight="bold" fill="#2b8a3e" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">the app (public)</text>
+<path d="M1690,580 L1700,580 L1700,126" fill="none" stroke="#f08c00" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#a)"/>
+<text x="1694" y="240" font-size="10" font-weight="bold" fill="#f08c00" text-anchor="end" stroke="#fff" stroke-width="3" paint-order="stroke">way out</text>
+<rect x="170" y="200" width="250" height="42" rx="6" fill="#fff0f6" stroke="#c2255c" stroke-width="1.5" />
+<text x="180" y="216" font-size="10" font-weight="bold" fill="#c2255c" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">admin gateway routes (one URL):</text>
+<text x="180" y="232" font-size="10" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">/grafana/ /prometheus/ /alertmanager/ /mail/ /minio/</text>
+<text x="40" y="675" font-size="14" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">WHO TALKS TO WHOM, THROUGH WHICH NETWORK, AND WHY</text>
+<rect x="36" y="682" width="1104" height="22" rx="3" fill="#e9ecef" stroke="#e9ecef" stroke-width="1.5" />
+<text x="40" y="697" font-size="11" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">#</text>
+<text x="70" y="697" font-size="11" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">From → to</text>
+<text x="440" y="697" font-size="11" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Port</text>
+<text x="610" y="697" font-size="11" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Network</text>
+<text x="720" y="697" font-size="11" font-weight="bold" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Why</text>
+<text x="40" y="718" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">1</text>
+<text x="70" y="718" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Browser → load balancer</text>
+<text x="440" y="718" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">8080</text>
+<text x="610" y="718" font-size="11" font-weight="bold" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">host</text>
+<text x="720" y="718" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">use the app</text>
+<rect x="36" y="724" width="1104" height="21" rx="0" fill="#f8f9fa" stroke="#f8f9fa" stroke-width="1.5" />
+<text x="40" y="739" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">2</text>
+<text x="70" y="739" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Browser → admin gateway</text>
+<text x="440" y="739" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">8081</text>
+<text x="610" y="739" font-size="11" font-weight="bold" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">host</text>
+<text x="720" y="739" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">admin tools, after the login (password generated by Terraform)</text>
+<text x="40" y="760" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">3</text>
+<text x="70" y="760" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Gateway → Grafana · Prometheus · Alertmanager · Mailpit · MinIO</text>
+<text x="440" y="760" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">3000·9090·9093·8025·9001</text>
+<text x="610" y="760" font-size="11" font-weight="bold" fill="#c2255c" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">admin</text>
+<text x="720" y="760" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">one path per tool; removes the prefix and its own credentials</text>
+<rect x="36" y="766" width="1104" height="21" rx="0" fill="#f8f9fa" stroke="#f8f9fa" stroke-width="1.5" />
+<text x="40" y="781" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">4</text>
+<text x="70" y="781" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Load balancer → web-1..3</text>
+<text x="440" y="781" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">3000</text>
+<text x="610" y="781" font-size="11" font-weight="bold" fill="#1c7ed6" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">app</text>
+<text x="720" y="781" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">requests, static-rr turns; health check /live every 2 s</text>
+<text x="40" y="802" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">5</text>
+<text x="70" y="802" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Load balancer → MinIO</text>
+<text x="440" y="802" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">9000</text>
+<text x="610" y="802" font-size="11" font-weight="bold" fill="#1c7ed6" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">app</text>
+<text x="720" y="802" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">/images/* straight from the bucket (CDN in front of S3)</text>
+<rect x="36" y="808" width="1104" height="21" rx="0" fill="#f8f9fa" stroke="#f8f9fa" stroke-width="1.5" />
+<text x="40" y="823" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">6</text>
+<text x="70" y="823" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">web → PostgreSQL · Redis</text>
+<text x="440" y="823" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">5432·6379</text>
+<text x="610" y="823" font-size="11" font-weight="bold" fill="#7048e8" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">backend</text>
+<text x="720" y="823" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">data, and the cache in prod (cache-aside, 60 s)</text>
+<text x="40" y="844" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">7</text>
+<text x="70" y="844" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Prometheus → load balancer · web</text>
+<text x="440" y="844" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">8405·9464</text>
+<text x="610" y="844" font-size="11" font-weight="bold" fill="#1c7ed6" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">app</text>
+<text x="720" y="844" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">metrics every 15 s</text>
+<rect x="36" y="850" width="1104" height="21" rx="0" fill="#f8f9fa" stroke="#f8f9fa" stroke-width="1.5" />
+<text x="40" y="865" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">8</text>
+<text x="70" y="865" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Prometheus → cAdvisor · Loki · Alloy · Alertmanager</text>
+<text x="440" y="865" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">8080·3100·12345·9093</text>
+<text x="610" y="865" font-size="11" font-weight="bold" fill="#0ca678" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">monitoring</text>
+<text x="720" y="865" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">metrics of the monitoring itself; firing alerts</text>
+<text x="40" y="886" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">9</text>
+<text x="70" y="886" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Alertmanager → Mailpit · api.telegram.org</text>
+<text x="440" y="886" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">1025·443</text>
+<text x="610" y="886" font-size="11" font-weight="bold" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">monitoring·egress</text>
+<text x="720" y="886" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">alert email and Telegram message, also when resolved</text>
+<rect x="36" y="892" width="1104" height="21" rx="0" fill="#f8f9fa" stroke="#f8f9fa" stroke-width="1.5" />
+<text x="40" y="907" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">10</text>
+<text x="70" y="907" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Grafana → Prometheus · Loki</text>
+<text x="440" y="907" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">9090·3100</text>
+<text x="610" y="907" font-size="11" font-weight="bold" fill="#0ca678" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">monitoring</text>
+<text x="720" y="907" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">dashboards: numbers from Prometheus, logs from Loki</text>
+<text x="40" y="928" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">11</text>
+<text x="70" y="928" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Alloy → Docker API proxy → Loki</text>
+<text x="440" y="928" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">2375·3100</text>
+<text x="610" y="928" font-size="11" font-weight="bold" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">docker-api</text>
+<text x="720" y="928" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">follows every container's logs and pushes them</text>
+<rect x="36" y="934" width="1104" height="21" rx="0" fill="#f8f9fa" stroke="#f8f9fa" stroke-width="1.5" />
+<text x="40" y="949" font-size="11" font-weight="normal" fill="#868e96" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">12</text>
+<text x="70" y="949" font-size="11" font-weight="normal" fill="#212529" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Terraform (host) → docker exec</text>
+<text x="440" y="949" font-size="11" font-weight="normal" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">—</text>
+<text x="610" y="949" font-size="11" font-weight="bold" fill="#495057" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Docker API</text>
+<text x="720" y="949" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">uploads the images, reloads HAProxy and Prometheus</text>
+<rect x="1165" y="660" width="530" height="430" rx="8" fill="#f8f9fa" stroke="#343a40" stroke-width="1.5" />
+<text x="1179" y="682" font-size="13" font-weight="bold" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Why each network</text>
+<text x="1179" y="699" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">frontend: only the two ways in. Docker can only publish</text>
+<text x="1179" y="716" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">  a port from a network that is not internal</text>
+<text x="1179" y="733" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">admin: people reach the tools only through the gateway;</text>
+<text x="1179" y="750" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">  no admin tool has a port of its own</text>
+<text x="1179" y="767" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">app: the load balancer never reaches the database</text>
+<text x="1179" y="784" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">backend: only the web replicas reach data and cache</text>
+<text x="1179" y="801" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">monitoring: collectors and stores; the gateway is not</text>
+<text x="1179" y="818" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">  here (Loki has no login)</text>
+<text x="1179" y="835" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">egress: Alertmanager's only way out, for Telegram</text>
+<text x="1179" y="852" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">docker-api: the log collector may only list and read</text>
+<text x="1179" y="869" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke"></text>
+<text x="1179" y="886" font-size="13" font-weight="bold" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Two planes</text>
+<text x="1179" y="903" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Data plane: app → backend (users)</text>
+<text x="1179" y="920" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Observability plane: monitoring (machines)</text>
+<text x="1179" y="937" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Management plane: admin (people, with a login)</text>
+<text x="1179" y="954" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke"></text>
+<text x="1179" y="971" font-size="13" font-weight="bold" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Cloud equivalent</text>
+<text x="1179" y="988" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">frontend = public subnet (ALB + bastion / IAP)</text>
+<text x="1179" y="1005" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">admin, app, backend, monitoring = private subnets</text>
+<text x="1179" y="1022" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">egress = subnet with a NAT gateway</text>
+<text x="1179" y="1039" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke"></text>
+<text x="1179" y="1056" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">Dev: same, 2 replicas; no cache, Alertmanager, mailbox</text>
+<text x="1179" y="1073" font-size="11" font-weight="normal" fill="#343a40" text-anchor="start" stroke="#fff" stroke-width="3" paint-order="stroke">or egress; ports 3000 (app) and 3001 (admin).</text>
+</svg>

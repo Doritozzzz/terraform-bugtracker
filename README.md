@@ -69,6 +69,13 @@ graph LR
     AM -->|"optional, egress network"| T["Telegram"]
 ```
 
+### Networks (prod)
+
+Every container and the networks it joins, who talks to whom and why. Generated from the real networks
+(`docker network inspect`).
+
+![Network architecture of prod: frontend with only the load balancer and the admin gateway, internal admin, app, backend, monitoring and docker-api networks, and egress for Telegram](docs/images/architecture.svg)
+
 ### Admin access
 Only two ports are published, both on `127.0.0.1`: the **app** and the **admin gateway**. Grafana, Prometheus,
 Alertmanager, the alert mailbox and the MinIO console publish no port: they sit on an internal `admin` network,
