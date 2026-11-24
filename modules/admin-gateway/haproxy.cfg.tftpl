@@ -38,8 +38,13 @@ frontend admin
   # take them as its own and reject them.
   http-request del-header Authorization
 
+  # /grafana goes to /grafana/. http-request rules always run before
+  # use_backend, so they are written first, as HAProxy expects.
 %{ for r in routes ~}
   http-request redirect location ${r.path_prefix} if { path ${trimsuffix(r.path_prefix, "/")} }
+%{ endfor ~}
+
+%{ for r in routes ~}
   use_backend ${r.name} if { path_beg ${r.path_prefix} }
 %{ endfor ~}
   default_backend index
