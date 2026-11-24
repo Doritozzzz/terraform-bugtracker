@@ -540,44 +540,45 @@ td.id-cell { font-family: var(--mono); font-variant-numeric: tabular-nums; color
 .row-new { animation: flash 2.5s ease-out; }
 @keyframes flash { from { background: color-mix(in srgb, var(--accent) 20%, transparent); } to { background: transparent; } }
 
-/* Loading skeletons: shimmer only while the first load is pending. */
+/* Loading skeletons: grey blocks that fade while the first load is pending. */
 .sk-line { display: block; height: var(--space-4); width: 70%; border-radius: var(--radius-sm); background: var(--surface-2); }
 .sk-block { height: 8rem; border-radius: var(--radius-md); background: var(--surface-2); }
 body[data-loading] .sk {
   color: transparent !important;
   border-radius: var(--radius-sm);
-  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
+  background: var(--surface-2);
+  animation: pulse 1.4s ease-in-out infinite;
   user-select: none;
 }
-@keyframes shimmer { to { background-position: -200% 0; } }
 
 /* ----------------------------------------------------------------- banner */
+/* Data could not be loaded: an outlined row in the error colour, no tint. */
 .banner {
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
-  margin-top: var(--space-6); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
-  border: var(--line) solid color-mix(in srgb, var(--err) 40%, transparent);
-  background: color-mix(in srgb, var(--err) 10%, transparent);
+  margin-top: var(--space-6); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border: var(--line) solid var(--err); border-radius: var(--radius-md);
+  background: var(--surface); color: var(--err); font-weight: var(--weight-medium);
 }
+.banner .btn { color: var(--text); }
 
 /* ----------------------------------------------------------------- dialogs */
+/* Dialogs and toasts float above the page: the only places with a shadow. */
 dialog {
-  width: min(32rem, calc(100vw - 2rem)); padding: 0;
-  border: 1px solid var(--border-strong); border-radius: 12px;
+  width: min(32rem, calc(100vw - 2 * var(--space-4))); padding: 0; overflow: hidden;
+  border: var(--line) solid var(--border); border-radius: var(--radius-md);
   background: var(--surface); color: var(--text);
-  box-shadow: 0 24px 60px rgb(0 0 0 / 0.3);
+  box-shadow: var(--shadow-overlay);
 }
-dialog::backdrop { background: var(--overlay); backdrop-filter: blur(2px); }
-.dialog-body { padding: 1.5rem 1.5rem 1.25rem; }
+dialog::backdrop { background: var(--overlay); }
+.dialog-body { padding: var(--space-6); }
 .dialog-body h2 { font-size: var(--text-md); line-height: var(--leading-md); font-weight: var(--weight-semibold); }
+.dialog-body h2 + .sub { margin-top: var(--space-1); }
 .dialog-foot {
-  display: flex; justify-content: flex-end; gap: 0.5rem;
-  padding: 0.9rem 1.5rem; border-top: 1px solid var(--border); background: var(--surface-2);
-  border-radius: 0 0 12px 12px;
+  display: flex; justify-content: flex-end; gap: var(--space-2);
+  padding: var(--space-4) var(--space-6); border-top: var(--line) solid var(--border);
 }
-.eyebrow { margin-bottom: 0.25rem; color: var(--muted); font-size: var(--text-sm); line-height: var(--leading-sm); }
-.tags { display: flex; gap: 0.5rem; margin: 0.9rem 0 1.25rem; }
+.eyebrow { margin-bottom: var(--space-1); color: var(--muted); font-size: var(--text-sm); line-height: var(--leading-sm); }
+.tags { display: flex; gap: var(--space-6); margin: var(--space-3) 0 var(--space-6); }
 
 .field { display: grid; gap: var(--space-2); min-width: 0; margin: var(--space-4) 0 0; padding: 0; border: 0; }
 .field > span, .field legend { padding: 0; font-size: var(--text-sm); font-weight: var(--weight-medium); }
@@ -600,17 +601,24 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(2px); }
 .segmented input:focus-visible + span { outline: var(--line-thick) solid var(--accent); outline-offset: calc(-1 * var(--line-thick)); }
 .segmented img { width: var(--space-4); height: var(--space-4); }
 
-.form-message { min-height: 1.25rem; margin-top: 0.9rem; color: var(--err); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+/* Takes no room until there is an error to show. */
+.form-message { margin-top: var(--space-4); color: var(--err); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.form-message:empty { margin: 0; }
 
 /* ------------------------------------------------------------------ toasts */
-.toasts { position: fixed; right: 1rem; bottom: 1rem; z-index: 50; display: grid; gap: 0.5rem; width: min(22rem, calc(100vw - 2rem)); }
+.toasts {
+  position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 50;
+  display: grid; gap: var(--space-2); width: min(22rem, calc(100vw - 2 * var(--space-4)));
+}
+/* Same mark as the status tags: a dot in the toast's colour. */
 .toast {
   --c: var(--accent);
-  padding: 0.7rem 0.9rem; border: 1px solid var(--border-strong); border-left: 3px solid var(--c);
-  border-radius: 8px; background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
-  font-size: var(--text-sm); font-weight: var(--weight-medium); animation: slide-in 0.2s ease-out;
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) var(--space-4); border: var(--line) solid var(--border); border-radius: var(--radius-md);
+  background: var(--surface); box-shadow: var(--shadow-overlay);
+  font-size: var(--text-sm); font-weight: var(--weight-medium);
 }
-@keyframes slide-in { from { opacity: 0; transform: translateY(8px); } }
+.toast::before { content: ''; flex: none; width: var(--space-2); height: var(--space-2); border-radius: 50%; background: var(--c); }
 
 /* ------------------------------------------------------------- responsive */
 @media (max-width: 40rem) {
