@@ -1,0 +1,64 @@
+global
+  # One line per request on stdout, so the log platform keeps a record of who
+  # used the admin tools and what they opened.
+  log stdout format raw local0
+
+# Docker's embedded DNS: a tool replaced by Terraform gets a new IP.
+resolvers docker
+  nameserver dns 127.0.0.11:53
+
+defaults
+  mode http
+  log global
+  option httplog
+
+  # Inside the Docker network a live tool accepts in well under a
+  # millisecond, so 1s only expires when it is down.
+  timeout connect 1s
+  timeout client 30s
+  timeout server 30s
+  # Grafana and Mailpit keep a WebSocket open for live updates.
+  timeout tunnel 1h
+
+  # init-addr none lets the gateway start even if a tool does not exist yet.
+  default-server resolvers docker init-addr none
+
+# The password comes from an environment variable of the container, so it is
+# never written to this file. "insecure" only means it is not hashed: a hash
+# would be recomputed on every request, and a tool page makes dozens of them.
+userlist admins
+  user ${user} insecure-password "$${ADMIN_PASSWORD}"
+
+frontend admin
+  bind :${listen_port}
+
+  # Every request needs the login, including the index page.
+  http-request auth realm admin unless { http_auth(admins) }
+  # The tools never see the gateway's credentials: Grafana would otherwise
+  # take them as its own and reject them.
+  http-request del-header Authorization
+
+%{ for r in routes ~}
+  http-request redirect location ${r.path_prefix} if { path ${trimsuffix(r.path_prefix, "/")} }
+  use_backend ${r.name} if { path_beg ${r.path_prefix} }
+%{ endfor ~}
+  default_backend index
+
+# Anything else: an index with a link to every tool. It is a backend because
+# http-request rules of the frontend run before use_backend is chosen.
+backend index
+  http-request return status 200 content-type "text/html; charset=utf-8" string "<!doctype html><title>Admin</title><h1>Admin tools</h1><ul>%{ for r in routes }<li><a href='${r.path_prefix}'>${r.name}</a></li>%{ endfor }</ul>"
+
+%{ for r in routes ~}
+backend ${r.name}
+%{ if r.strip_prefix ~}
+  # The tool serves from / and only uses the prefix to build its links.
+  http-request replace-path ^${trimsuffix(r.path_prefix, "/")}(/.*)$ \1
+%{ endif ~}
+  server ${r.name} ${r.server}
+
+%{ endfor ~}
+# Internal port, never published: the container healthcheck calls /healthz.
+frontend health
+  bind :${health_port}
+  monitor-uri /healthz
