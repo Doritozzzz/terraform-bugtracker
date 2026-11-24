@@ -38,6 +38,12 @@ frontend admin
   # take them as its own and reject them.
   http-request del-header Authorization
 
+  # Server-sent events (Prometheus's live notifications) stay open and quiet
+  # for long; with the 30s timeouts they were cut every 30 seconds. They get
+  # the same hour as WebSockets, here for the client side and in each backend
+  # for the server side.
+  http-request set-timeout client 1h if { req.hdr(accept) -m sub text/event-stream }
+
   # /grafana goes to /grafana/. http-request rules always run before
   # use_backend, so they are written first, as HAProxy expects.
 %{ for r in routes ~}
@@ -56,6 +62,7 @@ backend index
 
 %{ for r in routes ~}
 backend ${r.name}
+  http-request set-timeout server 1h if { req.hdr(accept) -m sub text/event-stream }
 %{ if r.strip_prefix ~}
   # The tool serves from / and only uses the prefix to build its links.
   http-request replace-path ^${trimsuffix(r.path_prefix, "/")}(/.*)$ \1
