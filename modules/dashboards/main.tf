@@ -78,7 +78,8 @@ resource "docker_container" "grafana" {
     "/tmp" = ""
   }
 
-  # The home dashboard, when one is given, is added at the end.
+  # The home dashboard and the public URL, when given, are added at the end.
+  # With root_url Grafana still serves from /: the gateway removes the path.
   env = concat([
     "GF_SECURITY_ADMIN_PASSWORD=${random_password.admin.result}",
     # Logs only to stdout, as JSON like the other services. The default also
@@ -103,7 +104,7 @@ resource "docker_container" "grafana" {
     # On by default but deprecated: browsers removed the X-XSS-Protection
     # header, and Grafana itself recommends turning it off.
     "GF_SECURITY_X_XSS_PROTECTION=false",
-  ], var.home_dashboard == null ? [] : ["GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/dashboards/${var.home_dashboard}"])
+  ], var.home_dashboard == null ? [] : ["GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/dashboards/${var.home_dashboard}"], var.root_url == null ? [] : ["GF_SERVER_ROOT_URL=${var.root_url}"])
 
   volumes {
     host_path      = local_file.datasources.filename
@@ -139,10 +140,13 @@ resource "docker_container" "grafana" {
 
   # Published on localhost only: the Docker default (0.0.0.0) would expose it
   # to the whole local network.
-  ports {
-    internal = local.http_port
-    external = var.port
-    ip       = "127.0.0.1"
+  dynamic "ports" {
+    for_each = var.port == null ? [] : [var.port]
+    content {
+      internal = local.http_port
+      external = ports.value
+      ip       = "127.0.0.1"
+    }
   }
 
   healthcheck {

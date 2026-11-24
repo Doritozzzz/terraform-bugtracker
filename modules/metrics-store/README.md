@@ -54,6 +54,7 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 | scrape\_jobs | What to scrape every 15 s: a job name and its host:port targets. Optional: keep, a map of label => regex every stored series must match (e.g. to keep one environment from a shared exporter); honor\_timestamps = false to ignore the timestamps an exporter attaches to its samples. Prometheus scrapes itself as job prometheus. | <pre>list(object({<br/>    name             = string<br/>    targets          = list(string)<br/>    keep             = optional(map(string), {})<br/>    honor_timestamps = optional(bool)<br/>  }))</pre> | n/a | yes |
 | alertmanagers | Alertmanagers (host:port) that receive the firing alerts. Empty: rules are evaluated but nobody is notified. | `list(string)` | `[]` | no |
 | external\_labels | Labels added to every alert this Prometheus sends, e.g. environment = "prod". | `map(string)` | `{}` | no |
+| external\_url | Public URL when the web UI is served under a path of a gateway that removes it, e.g. http://127.0.0.1:8081/prometheus/. Null: served from the root of its port. | `string` | `null` | no |
 | image | Prometheus image. Pinned to an exact version so every machine runs the same one. | `string` | `"prom/prometheus:v3.16.0"` | no |
 | labels | Docker labels for the container, e.g. environment and service, used by monitoring to filter it. | `map(string)` | `{}` | no |
 | memory | Memory limit in MB. Null means no limit. | `number` | `null` | no |
@@ -65,6 +66,7 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 
 | Name | Description |
 | ---- | ----------- |
+| backend | host:port of the web UI inside the network, ready to give to a gateway. |
 | internal\_url | URL of the Prometheus API inside the Docker network (for Grafana). |
-| url | URL of the Prometheus web UI on the host, or null when it is not published. |
+| url | URL people open: external\_url, or the published port. Null when neither is set. |
 <!-- END_TF_DOCS -->

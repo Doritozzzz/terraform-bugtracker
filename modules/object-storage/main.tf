@@ -78,10 +78,11 @@ resource "docker_container" "minio" {
     "/tmp" = ""
   }
 
-  env = [
+  # Behind a gateway, the console builds its links and redirects with its public URL.
+  env = concat([
     "MINIO_ROOT_USER=${local.root_user}",
     "MINIO_ROOT_PASSWORD=${random_password.root.result}",
-  ]
+  ], var.console_url == null ? [] : ["MINIO_BROWSER_REDIRECT_URL=${var.console_url}"])
 
   # Fixed console port; otherwise MinIO picks a random one on every start.
   command = ["server", "/data", "--console-address", ":${local.console_port}"]

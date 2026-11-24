@@ -49,6 +49,12 @@ variable "port" {
   default     = null
 }
 
+variable "external_url" {
+  description = "Public URL when the web UI is served under a path of a gateway that removes it, e.g. http://127.0.0.1:8081/prometheus/. Null: served from the root of its port."
+  type        = string
+  default     = null
+}
+
 variable "image" {
   description = "Prometheus image. Pinned to an exact version so every machine runs the same one."
   type        = string

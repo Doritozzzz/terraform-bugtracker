@@ -47,6 +47,7 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 | source\_dir | Folder uploaded to the bucket. The upload runs again whenever any file in it changes. | `string` | n/a | yes |
 | cache\_control | Cache-Control header of every uploaded object. no-cache makes browsers revalidate (cheap 304) so changes show at once. | `string` | `"no-cache"` | no |
 | console\_port | Port on 127.0.0.1 for the MinIO web console. Null keeps the console unpublished. | `number` | `null` | no |
+| console\_url | Public URL of the console when it is served under a path of a gateway that removes it, e.g. http://127.0.0.1:8081/minio/ (the final / is needed). Null: served from the root of its port. | `string` | `null` | no |
 | image | MinIO image. The official images can no longer be pulled; Chainguard only tags latest, so it is pinned by digest. | `string` | `"cgr.dev/chainguard/minio@sha256:548147b5fc95a67e3e45285dff7e0e50326c3eb1977c6218039461771156c5e7"` | no |
 | labels | Docker labels for the MinIO container, e.g. environment and service, used by monitoring to filter it. | `map(string)` | `{}` | no |
 | memory | Memory limit in MB. Null means no limit. | `number` | `null` | no |
@@ -58,7 +59,8 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 | ---- | ----------- |
 | backend | host:port of the S3 API, ready to give to a load balancer. |
 | bucket | Bucket name. Objects are served at /<bucket>/<file>. |
-| console\_url | URL of the MinIO web console, or null when it is not published. |
+| console\_backend | host:port of the web console inside the network, ready to give to a gateway. |
+| console\_url | URL people open for the console: console\_url, or the published port. Null when neither is set. |
 | health\_path | Unauthenticated HTTP path that answers 200 while MinIO is alive. |
 | host | Hostname to reach the S3 API from containers on the same network. |
 | port | S3 API port inside the network. |

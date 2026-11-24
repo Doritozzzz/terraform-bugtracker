@@ -36,6 +36,17 @@ variable "console_port" {
   default     = null
 }
 
+variable "console_url" {
+  description = "Public URL of the console when it is served under a path of a gateway that removes it, e.g. http://127.0.0.1:8081/minio/ (the final / is needed). Null: served from the root of its port."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.console_url == null ? true : endswith(var.console_url, "/")
+    error_message = "console_url must end with /: without it the console shows a blank page."
+  }
+}
+
 variable "image" {
   description = "MinIO image. The official images can no longer be pulled; Chainguard only tags latest, so it is pinned by digest."
   type        = string

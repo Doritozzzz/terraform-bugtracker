@@ -69,6 +69,17 @@ resource "docker_container" "prometheus" {
     drop = ["ALL"]
   }
 
+  # Behind a gateway, the UI builds its links with the public URL while the
+  # routes stay at /, so the healthcheck, the scrapes and Grafana are
+  # unchanged. Setting a command replaces the image's, so its two flags are
+  # repeated.
+  command = var.external_url == null ? null : [
+    "--config.file=/etc/prometheus/prometheus.yml",
+    "--storage.tsdb.path=/prometheus",
+    "--web.external-url=${var.external_url}",
+    "--web.route-prefix=/",
+  ]
+
   # The folder, not the file: a single mounted file stays tied to the file it
   # pointed to when the container started, so a rewritten config would never
   # be seen. The image command already reads prometheus.yml from this folder.

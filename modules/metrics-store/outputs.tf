@@ -4,6 +4,11 @@ output "internal_url" {
 }
 
 output "url" {
-  description = "URL of the Prometheus web UI on the host, or null when it is not published."
-  value       = var.port == null ? null : "http://127.0.0.1:${var.port}"
+  description = "URL people open: external_url, or the published port. Null when neither is set."
+  value       = var.external_url != null ? var.external_url : var.port == null ? null : "http://127.0.0.1:${var.port}"
+}
+
+output "backend" {
+  description = "host:port of the web UI inside the network, ready to give to a gateway."
+  value       = "${docker_container.prometheus.name}:${local.http_port}"
 }

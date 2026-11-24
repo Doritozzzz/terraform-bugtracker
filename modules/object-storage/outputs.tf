@@ -24,8 +24,13 @@ output "bucket" {
 }
 
 output "console_url" {
-  description = "URL of the MinIO web console, or null when it is not published."
-  value       = var.console_port == null ? null : "http://127.0.0.1:${var.console_port}"
+  description = "URL people open for the console: console_url, or the published port. Null when neither is set."
+  value       = var.console_url != null ? var.console_url : var.console_port == null ? null : "http://127.0.0.1:${var.console_port}"
+}
+
+output "console_backend" {
+  description = "host:port of the web console inside the network, ready to give to a gateway."
+  value       = "${docker_container.minio.name}:${local.console_port}"
 }
 
 output "root_user" {

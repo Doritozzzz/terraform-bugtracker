@@ -4,13 +4,20 @@ variable "name" {
 }
 
 variable "networks" {
-  description = "Networks to join: the ones where the data sources are, plus one that is not internal to publish the port."
+  description = "Networks to join: the ones where the data sources are, plus the one people reach it from (a gateway's network, or one that is not internal to publish the port)."
   type        = list(string)
 }
 
 variable "port" {
-  description = "Port on 127.0.0.1 where Grafana is served."
+  description = "Port on 127.0.0.1 where Grafana is published. Null keeps it unpublished, e.g. behind a gateway."
   type        = number
+  default     = null
+}
+
+variable "root_url" {
+  description = "Public URL when Grafana is served under a path of a gateway that removes it, e.g. http://127.0.0.1:8081/grafana/. Grafana builds its links and redirects with it. Null: served from the root of its port."
+  type        = string
+  default     = null
 }
 
 variable "datasources" {
