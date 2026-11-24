@@ -197,6 +197,7 @@ kbd {
 
 .brand { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--weight-semibold); }
 .brand svg { width: var(--space-6); height: var(--space-6); }
+.brand + .tag { margin-left: var(--space-2); }
 
 .tabs-inner { display: flex; gap: var(--space-6); overflow-x: auto; }
 .tabs a {
@@ -491,6 +492,10 @@ a.tag:hover { text-decoration: underline; text-underline-offset: var(--space-1);
 .btn-primary kbd { background: transparent; color: inherit; border-color: color-mix(in srgb, var(--primary-fg) 40%, transparent); }
 .btn-ghost { border-color: transparent; background: transparent; }
 .icon-btn { width: var(--control-height); padding: 0; }
+/* In the top bar only the main action is outlined or filled; the theme
+   toggle stays quiet, like the health link next to it. */
+.topbar .icon-btn { border-color: transparent; color: var(--muted); }
+.topbar .icon-btn:hover { color: var(--text); }
 
 .input {
   width: 100%; height: var(--control-height); padding: 0 var(--space-3);
