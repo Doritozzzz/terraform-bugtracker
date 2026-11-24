@@ -176,7 +176,7 @@ environments/dev|prod    One Terraform root per environment: main.tf, variables.
 monitoring/dashboards    Grafana dashboards as code (provisioned, not editable from the UI)
 monitoring/alerts        Prometheus alerting rules + their promtool unit tests
 scripts/test.sh          End-to-end verification (make test)
-scripts/demo.sh          Guided demonstration (make demo)
+scripts/demo.sh          Guided demonstration (make demo; --map: requirement -> file:line)
 Makefile                 Every operation, for ENV=dev|prod
 ```
 
@@ -333,7 +333,8 @@ persistence, logs and metrics per environment, and an alert from firing to resol
 | `make kill-db` / `start-db`, `kill-cache` / `start-cache`, `kill-storage` / `start-storage` | Simulate failures and recoveries |
 | `make test-db` / `make test-cache` | Check PostgreSQL / Redis directly |
 | `make test` / `make test-alerts` | End-to-end suite / alert rule tests |
-| `make demo` | Guided 10-minute demonstration (`bash scripts/demo.sh --auto` runs it without pauses) |
+| `make demo` | Guided 10-minute demonstration; step 1 destroys and deploys everything live |
+| `make demo-deploy` / `make demo-talk` | Only step 1 (before the talk) / the demo from step 2 |
 | `make fmt` / `make validate` | Format and validate the Terraform code |
 | `make docs` | Regenerate the inputs/outputs tables of the module READMEs (terraform-docs) |
 | `make dist` | Zip of the committed files for the submission (run it in a git clone) |
@@ -342,26 +343,39 @@ persistence, logs and metrics per environment, and an alert from firing to resol
 
 ## 11. Guided Demo (`make demo`)
 
-Thirteen short steps on prod, one ENTER each. Every step says what it shows, prints each command before running it
-and points to what to look at in the browser. It takes about 3 minutes without pauses.
+Sixteen steps for a 10-minute talk, one ENTER each. Every screen has a one-line summary, then fixed labels:
+`RUN` (the command and its result), `OPEN` (what to look at in the browser), `WHY` (the design decision, and
+why not the alternatives) and `CODE` (the file and line, found when the step runs, so it is never out of date).
+The header shows the elapsed time against the target of each step.
 
-1. **One command deploys everything:** `make up-all`, and a second plan has nothing to change.
-2. **Two environments side by side:** their URLs and containers.
-3. **Same modules, different settings:** the two `terraform.tfvars`.
-4. **The load balancer shares the requests** between the three replicas.
-5. **Scaling out is changing one number:** `-var web_replicas=5` overrides `terraform.tfvars`, five replicas get
-   traffic, and a normal `make up` returns to the three the code declares.
-6. **A replica fails, users notice nothing:** `make kill-web`, then 20 requests all answer 200.
-7. **Images come from object storage**, served by the load balancer; the bucket cannot be listed.
-8. **Every request can be traced:** its request ID, found in the load balancer log.
-9. **The alert reaches the team:** the email (and the Telegram message) about a minute later.
-10. **Recovery:** `make start-web`, and the replica is back in rotation.
-11. **Self-healing:** Docker restarts a crashed replica; a replica deleted by hand (drift) is found by
-    `terraform plan` and recreated by `apply`.
-12. **Secure by default:** only the app and the admin gateway are published, the gateway asks for its login,
-    no root users and ignored secrets.
-13. **Everything is tested:** the alert rule tests and the result of `make test`.
+**Step 1 always destroys dev and prod and deploys them again from nothing**, in the background, while steps 2-5
+explain the design. Run it live, or before the talk:
 
+```bash
+make demo          # every step, step 1 live
+make demo-deploy   # only step 1, waiting until both environments are up
+make demo-talk     # then, at the talk, from step 2
+```
+
+1. **Deploy everything from nothing** (`terraform destroy` + `make up-all`, in the background).
+2. **Architecture:** opens [docs/images/architecture.svg](docs/images/architecture.svg).
+3. **Reusable modules:** the 13 modules and what each runs.
+4. **One root per environment:** the two `terraform.tfvars` side by side.
+5. **Load balancing and HA: the design** (`static-rr`, health checks, restart policy).
+6. **Deployed: how to get in:** a second `plan` has nothing to change; URLs, users and passwords.
+7. **Load balancing, live:** 30 requests counted by replica.
+8. **Scaling out with no downtime:** `-var web_replicas=5` under traffic; no failed request, HAProxy reloaded.
+9. **Back to what the code says:** `make up` returns to the three replicas of `terraform.tfvars`.
+10. **Cache and object storage:** `X-Cache` MISS then HIT; a picture answers 200, listing the bucket 403.
+11. **A replica fails:** `make kill-web`, and 20 requests all answer 200.
+12. **Dashboards and a Prometheus query:** the query behind the capacity alert.
+13. **The alert reaches the team:** the alert email (and the Telegram message).
+14. **Tracing one request:** its request ID, copied to search the logs in Grafana.
+15. **Recovery:** `make start-web`, and the replica is back in the rotation.
+16. **Secure by default:** two published ports, the gateway answers 401 without its login.
+
+Other modes: `--list` (the steps), `--map` (each requirement and the file:line that implements it),
+`--access` (URLs, users and passwords at any time), `--from N --to M` and `--auto` (no pauses, to rehearse).
 If the demo is stopped early, it starts the replica again and returns prod to its code.
 
 ---
