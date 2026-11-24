@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 .PHONY: help init fmt validate docs plan apply up up-all output stop start destroy recreate-db ps demo-deploy demo-talk \
-        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage kill-web start-web status urls passwords test test-alerts demo dist
+        test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage kill-web start-web kill revive status urls passwords test test-alerts demo dist
 
 # Environment for the Terraform targets: dev (default) or prod, e.g. make up ENV=prod.
 ENV ?= dev
@@ -103,6 +103,23 @@ kill-web: ## Stop web replica 2: the others keep serving; in prod it fires an al
 
 start-web: ## Start web replica 2 again (ENV=prod)
 	docker start $(PREFIX)-web-2
+
+# Any container of the environment by its short name, e.g. NAME=prometheus or
+# NAME=web-3. Also docker stop, so it stays down until revive (and in prod its
+# alert fires). An unknown or missing NAME lists the valid ones.
+define check_name
+	@docker inspect $(PREFIX)-$(NAME) >/dev/null 2>&1 || { \
+	  echo "NAME must be one of: $$(docker ps -a --filter name=^$(PREFIX)- --format '{{.Names}}' | sed 's/^$(PREFIX)-//' | sort | paste -sd' ' -)"; \
+	  exit 2; }
+endef
+
+kill: ## Stop any container by name, e.g. NAME=prometheus or NAME=web-3 (ENV=dev)
+	$(check_name)
+	docker stop $(PREFIX)-$(NAME)
+
+revive: ## Start a container stopped with kill (NAME=..., ENV=dev)
+	$(check_name)
+	docker start $(PREFIX)-$(NAME)
 
 # ------------------------------------------------------------------ both
 
