@@ -612,9 +612,10 @@ dialog::backdrop { background: var(--overlay); }
   position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 50;
   display: grid; gap: var(--space-2); width: min(22rem, calc(100vw - 2 * var(--space-4)));
 }
-/* Same mark as the status tags: a dot in the toast's colour. */
+/* Same mark as the status tags: a dot in the toast's colour. The default
+   sits in :where() so a c-* class (c-ok, c-err) always wins over it. */
+:where(.toast) { --c: var(--accent); }
 .toast {
-  --c: var(--accent);
   display: flex; align-items: center; gap: var(--space-2);
   padding: var(--space-3) var(--space-4); border: var(--line) solid var(--border); border-radius: var(--radius-md);
   background: var(--surface); box-shadow: var(--shadow-overlay);
