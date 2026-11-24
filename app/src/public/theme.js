@@ -1,8 +1,7 @@
 // Runs before the page paints, so there is no flash of the wrong theme.
+// Light is the default; dark only when the user picked it with the toggle.
 try {
-  const saved = localStorage.getItem('theme');
-  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.dataset.theme = saved === 'light' || saved === 'dark' ? saved : dark ? 'dark' : 'light';
+  document.documentElement.dataset.theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
 } catch {
   document.documentElement.dataset.theme = 'light';
 }

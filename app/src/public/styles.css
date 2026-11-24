@@ -1,71 +1,143 @@
 /* ------------------------------------------------------------------ tokens */
+/* Every size, space, radius and colour below comes from these scales. Light is
+   the main theme; dark only applies when the user picks it with the toggle. */
 :root {
   color-scheme: light;
-  --bg: #fafafa;
-  --surface: #ffffff;
-  --surface-2: #f4f4f5;
-  --border: #ebebeb;
-  --border-strong: #d4d4d8;
-  --text: #171717;
-  --muted: #666666;
-  --primary: #171717;
-  --primary-fg: #fafafa;
-  --primary-hover: #404040;
-  --focus: #0070f3;
-  --ok: #16a34a;
-  --err: #dc2626;
-  --warn: #d97706;
-  --yellow: #eab308;
-  --info: #0070f3;
-  --violet: #7928ca;
-  --cyan: #0891b2;
-  --pink: #db2777;
-  --neutral: #71717a;
-  --overlay: rgb(0 0 0 / 0.45);
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.04);
-  --radius: 10px;
-  --font: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Neutral ramp */
+  --gray-0: #ffffff;
+  --gray-50: #fafafa;
+  --gray-100: #f4f4f5;
+  --gray-200: #e4e4e7;
+  --gray-300: #d4d4d8;
+  --gray-400: #a1a1aa;
+  --gray-500: #71717a;
+  --gray-600: #52525b;
+  --gray-700: #3f3f46;
+  --gray-800: #27272a;
+  --gray-900: #18181b;
+  --gray-950: #0f0f11;
+
+  /* Roles. Contrast on --bg: text 17:1, muted 7.4:1, faint 4.6:1 (AA). */
+  --bg: var(--gray-50);
+  --surface: var(--gray-0);
+  --surface-2: var(--gray-100);
+  --border: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --text: var(--gray-900);
+  --muted: var(--gray-600);
+  --faint: var(--gray-500);
+  --primary: var(--gray-900);
+  --primary-fg: var(--gray-0);
+  --primary-hover: var(--gray-700);
+  --overlay: rgb(0 0 0 / 0.4);
+
+  /* One accent (focus, links, sparklines) and three meanings, all AA as text. */
+  --accent: #2563eb;
+  --ok: #15803d;
+  --warn: #b45309;
+  --err: #b91c1c;
+
+  /* Incident status fills, told apart by shape too (see .tag). */
+  --status-open: #2563eb;
+  --status-progress: #d97706;
+  --status-resolved: #16a34a;
+
+  /* Priority fills, matching the priority pictures in the object storage. */
+  --priority-low: #16a34a;
+  --priority-medium: #eab308;
+  --priority-high: #d97706;
+  --priority-critical: #dc2626;
+
+  /* Replica identity for the load balancing view, in a fixed order checked
+     for colour blindness. Replicas are always labelled by name as well. */
+  --replica-1: #2a78d6;
+  --replica-2: #eb6834;
+  --replica-3: #1baf7a;
+  --replica-4: #6250d6;
+  --replica-5: #e87ba4;
+
+  /* Type: system fonts, six sizes with their line heights, three weights. */
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --text-xs: 0.75rem;   --leading-xs: 1rem;      /* 12/16 */
+  --text-sm: 0.8125rem; --leading-sm: 1.25rem;   /* 13/20 */
+  --text-base: 0.875rem; --leading-base: 1.25rem; /* 14/20 */
+  --text-md: 1rem;      --leading-md: 1.5rem;    /* 16/24 */
+  --text-lg: 1.25rem;   --leading-lg: 1.75rem;   /* 20/28 */
+  --text-xl: 1.5rem;    --leading-xl: 2rem;      /* 24/32 */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* Space on a 4px base. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Two radii: controls and containers. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+
+  /* Borders separate surfaces; a shadow only marks layers that float. */
+  --shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.06);
+
+  --content-width: 72rem;
+  --control-height: 2rem;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #000000;
-  --surface: #0a0a0a;
-  --surface-2: #141414;
-  --border: #262626;
-  --border-strong: #3d3d3d;
-  --text: #ededed;
-  --muted: #a1a1a1;
-  --primary: #ededed;
-  --primary-fg: #0a0a0a;
-  --primary-hover: #ffffff;
-  --focus: #3291ff;
-  --ok: #3ecf6e;
-  --err: #f2555a;
-  --warn: #f5a524;
-  --yellow: #facc15;
-  --info: #4c9aff;
-  --violet: #a78bfa;
-  --cyan: #22d3ee;
-  --pink: #f472b6;
-  --neutral: #8b8b8b;
-  --overlay: rgb(0 0 0 / 0.65);
-  --shadow: none;
+  --bg: var(--gray-950);
+  --surface: var(--gray-900);
+  --surface-2: var(--gray-800);
+  --border: var(--gray-800);
+  --border-strong: var(--gray-700);
+  --text: var(--gray-50);
+  --muted: var(--gray-400);
+  --faint: var(--gray-400);
+  --primary: var(--gray-50);
+  --primary-fg: var(--gray-900);
+  --primary-hover: var(--gray-300);
+  --overlay: rgb(0 0 0 / 0.6);
+  --accent: #60a5fa;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --err: #f87171;
+  --status-open: #3987e5;
+  --status-progress: #c98500;
+  --status-resolved: #22a06b;
+  --replica-1: #3987e5;
+  --replica-2: #d95926;
+  --replica-3: #199e70;
+  --replica-4: #9085e9;
+  --replica-5: #d55181;
+  --shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5);
 }
 
-/* Semantic color helper: anything with a c-* class exposes --c.
-   Priorities follow the colours of their pictures in images/. */
-.c-low, .c-ok { --c: var(--ok); }
-.c-medium { --c: var(--yellow); }
-.c-neutral { --c: var(--neutral); }
-.c-info { --c: var(--info); }
-.c-high, .c-warn { --c: var(--warn); }
-.c-critical, .c-err { --c: var(--err); }
-.c-open, .c-violet { --c: var(--violet); }
-.c-in_progress, .c-cyan { --c: var(--cyan); }
-.c-pink { --c: var(--pink); }
-.c-resolved { --c: var(--ok); }
+/* Anything with a c-* class exposes its colour as --c. */
+.c-ok { --c: var(--ok); }
+.c-warn { --c: var(--warn); }
+.c-err { --c: var(--err); }
+.c-info { --c: var(--accent); }
+.c-neutral { --c: var(--faint); }
+.c-open { --c: var(--status-open); }
+.c-in_progress { --c: var(--status-progress); }
+.c-resolved { --c: var(--status-resolved); }
+.c-low { --c: var(--priority-low); }
+.c-medium { --c: var(--priority-medium); }
+.c-high { --c: var(--priority-high); }
+.c-critical { --c: var(--priority-critical); }
+.c-replica-1 { --c: var(--replica-1); }
+.c-replica-2 { --c: var(--replica-2); }
+.c-replica-3 { --c: var(--replica-3); }
+.c-replica-4 { --c: var(--replica-4); }
+.c-replica-5 { --c: var(--replica-5); }
 
 /* -------------------------------------------------------------------- base */
 * { box-sizing: border-box; }
@@ -83,7 +155,7 @@ h1, h2, h3, p, dl, dd, ul { margin: 0; padding: 0; }
 ul { list-style: none; }
 a { color: inherit; text-decoration: none; }
 button, input, select { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .sub { color: var(--muted); font-size: 0.8125rem; }
@@ -149,8 +221,7 @@ main { padding-bottom: 2rem; }
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-md);
 }
 .card-head {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
@@ -296,7 +367,7 @@ main { padding-bottom: 2rem; }
 .source-spark-mini {
   display: flex;
   align-items: center;
-  color: var(--info);
+  color: var(--accent);
   width: 5rem;
   height: 1.5rem;
 }
@@ -311,7 +382,7 @@ main { padding-bottom: 2rem; }
 .spark-area { fill: currentColor; opacity: 0.1; stroke: none; }
 
 /* Services */
-.svc { --c: var(--neutral); padding: 1.1rem 1.25rem; }
+.svc { --c: var(--faint); padding: 1.1rem 1.25rem; }
 .svc[data-state='up'] { --c: var(--ok); }
 .svc[data-state='down'] { --c: var(--err); }
 .svc[data-state='unknown'] { --c: var(--warn); }
@@ -350,7 +421,7 @@ dl.facts.plain dd { text-align: left; }
 .dot-up { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
 .dot-down { background: var(--err); box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 22%, transparent); }
 .dot-warn { background: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent); }
-.dot-disabled { background: var(--neutral); }
+.dot-disabled { background: var(--faint); }
 /* Coloured like the replica it stands for (c-* class). */
 .dot-replica { background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent); }
 /* Hollow ring: no answer from the web server, different shape from "disabled". */
@@ -368,12 +439,12 @@ dl.facts.plain dd { text-align: left; }
   display: inline-flex; align-items: center; gap: 0.4rem;
   padding: 0.1rem 0.6rem; border-radius: 999px; white-space: nowrap;
   font-size: 0.75rem; font-weight: 500;
-  background: color-mix(in srgb, var(--c) 13%, transparent);
-  color: color-mix(in srgb, var(--c) 72%, var(--text));
-  border: 1px solid color-mix(in srgb, var(--c) 28%, transparent);
+  background: color-mix(in srgb, var(--c, var(--faint)) 13%, transparent);
+  color: color-mix(in srgb, var(--c, var(--faint)) 72%, var(--text));
+  border: 1px solid color-mix(in srgb, var(--c, var(--faint)) 28%, transparent);
 }
-.tag::before { content: ''; width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--c); }
-a.tag:hover { border-color: color-mix(in srgb, var(--c) 55%, transparent); }
+.tag::before { content: ''; width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--c, var(--faint)); }
+a.tag:hover { border-color: color-mix(in srgb, var(--c, var(--faint)) 55%, transparent); }
 /* Priority tags show their picture instead of the dot, unless it fails to load. */
 .tag.has-img::before { display: none; }
 .tag img { width: 0.875rem; height: 0.875rem; }
@@ -411,7 +482,7 @@ a.tag:hover { border-color: color-mix(in srgb, var(--c) 55%, transparent); }
   border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface);
 }
 .input::placeholder { color: var(--muted); opacity: 0.7; }
-.input:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; border-color: var(--focus); }
+.input:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
 .select { width: auto; }
 
 .row-link { padding: 0; border: 0; background: none; color: var(--text); font-weight: 500; text-align: left; cursor: pointer; }
@@ -445,7 +516,7 @@ td.id-cell { font-family: var(--mono); font-variant-numeric: tabular-nums; color
 .table-foot { padding: 0.7rem 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8125rem; }
 
 .row-new { animation: flash 2.5s ease-out; }
-@keyframes flash { from { background: color-mix(in srgb, var(--info) 20%, transparent); } to { background: transparent; } }
+@keyframes flash { from { background: color-mix(in srgb, var(--accent) 20%, transparent); } to { background: transparent; } }
 
 /* Loading skeletons: shimmer only while the first load is pending. */
 .sk-line { display: block; height: 1rem; width: 70%; border-radius: 6px; background: var(--surface-2); }
@@ -499,7 +570,7 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(2px); }
   font-size: 0.8125rem; font-weight: 500; text-align: center; cursor: pointer;
 }
 .segmented input:checked + span { background: var(--surface); color: var(--text); box-shadow: 0 0 0 1px var(--border-strong); }
-.segmented input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 1px; }
+.segmented input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
 .segmented img { width: 1rem; height: 1rem; margin-right: 0.35rem; vertical-align: -0.2rem; }
 
 .form-message { min-height: 1.25rem; margin-top: 0.9rem; color: var(--err); font-size: 0.8125rem; font-weight: 500; }
@@ -507,7 +578,7 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(2px); }
 /* ------------------------------------------------------------------ toasts */
 .toasts { position: fixed; right: 1rem; bottom: 1rem; z-index: 50; display: grid; gap: 0.5rem; width: min(22rem, calc(100vw - 2rem)); }
 .toast {
-  --c: var(--info);
+  --c: var(--accent);
   padding: 0.7rem 0.9rem; border: 1px solid var(--border-strong); border-left: 3px solid var(--c);
   border-radius: 8px; background: var(--surface); box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
   font-size: 0.8125rem; font-weight: 500; animation: slide-in 0.2s ease-out;
