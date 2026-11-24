@@ -138,7 +138,7 @@ pause
 # ------------------------------------------------------------ 5. scaling
 
 step "Scaling out is changing one number" \
-  "Prod declares three replicas in terraform.tfvars. A -var on the command line takes precedence over that file, so we ask for five without editing it. Terraform adds two replicas and the load balancer reloads its new config without closing its port, so no request fails. Prometheus is replaced, as it reads its config only when it starts."
+  "Prod declares three replicas in terraform.tfvars. A -var on the command line takes precedence over that file, so we ask for five without editing it. Terraform adds two replicas, and the load balancer and Prometheus reload their new config without being replaced, so no request fails and no metric is missed."
 run "terraform -chdir=environments/prod plan -input=false -no-color -var web_replicas=5 -out=tfplan | grep -E '^  # |^Plan:'"
 DRIFTED=1
 run "make --no-print-directory apply ENV=prod | grep 'Apply complete'"

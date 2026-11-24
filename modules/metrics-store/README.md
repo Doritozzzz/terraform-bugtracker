@@ -30,7 +30,7 @@ module "metrics_store" {
 ## Notes
 
 - `keep` stores only the series whose labels match every regex, e.g. one environment from a shared exporter.
-- A change of config or rules replaces the container (Prometheus reads them at startup); the data stays in the volume.
+- The config is rendered to `<root>/.generated/<name>/prometheus.yml` and its folder is mounted read-only. A change of config or rules is checked with `promtool` and then loaded with `SIGHUP`, without replacing the container. Needs the `docker` CLI where Terraform runs.
 - `port` publishes the web UI on 127.0.0.1; leave it null in production.
 - Runs as `nobody`, read-only, with no capabilities.
 

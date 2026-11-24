@@ -1,6 +1,9 @@
 locals {
   # Port inside the container.
   http_port = 9090
+
+  # Changes whenever a rule file changes, so the rules are reloaded too.
+  rules_hash = var.rules_dir == null ? null : sha1(join("", [for f in fileset(var.rules_dir, "*.rules.yml") : filesha1("${var.rules_dir}/${f}")]))
 }
 
 resource "docker_image" "prometheus" {
@@ -16,9 +19,10 @@ resource "docker_volume" "data" {
   name = "${var.name}-data"
 }
 
-# Rendered to a file and bind-mounted read-only, like the load balancer config.
+# Rendered to a file whose folder is bind-mounted read-only, like the load
+# balancer config.
 resource "local_file" "config" {
-  filename = abspath("${path.root}/.generated/${var.name}.yml")
+  filename = abspath("${path.root}/.generated/${var.name}/prometheus.yml")
   content = templatefile("${path.module}/prometheus.yml.tftpl", {
     http_port       = local.http_port
     scrape_jobs     = var.scrape_jobs
@@ -30,12 +34,6 @@ resource "local_file" "config" {
   # The provider default is 0777 (writable by anyone).
   file_permission      = "0644"
   directory_permission = "0755"
-}
-
-# Changes whenever a rule file changes. Prometheus reads rules only at startup,
-# so the container is replaced to load them, like when the config changes.
-resource "terraform_data" "rules" {
-  input = var.rules_dir == null ? null : sha1(join("", [for f in fileset(var.rules_dir, "*.rules.yml") : filesha1("${var.rules_dir}/${f}")]))
 }
 
 resource "docker_container" "prometheus" {
@@ -71,18 +69,22 @@ resource "docker_container" "prometheus" {
     drop = ["ALL"]
   }
 
-  # Mounted where the image command already looks for it, so no command is set.
+  # The folder, not the file: a single mounted file stays tied to the file it
+  # pointed to when the container started, so a rewritten config would never
+  # be seen. The image command already reads prometheus.yml from this folder.
   volumes {
-    host_path      = local_file.config.filename
-    container_path = "/etc/prometheus/prometheus.yml"
+    host_path      = dirname(local_file.config.filename)
+    container_path = "/etc/prometheus"
     read_only      = true
   }
 
+  # Outside /etc/prometheus: Docker cannot create a mount point inside a
+  # read-only mounted folder.
   dynamic "volumes" {
     for_each = var.rules_dir == null ? [] : [abspath(var.rules_dir)]
     content {
       host_path      = volumes.value
-      container_path = "/etc/prometheus/rules"
+      container_path = "/etc/prometheus-rules"
       read_only      = true
     }
   }
@@ -118,9 +120,18 @@ resource "docker_container" "prometheus" {
 
   # terraform apply waits until Prometheus is ready.
   wait = true
+}
 
-  # The mounted files are read only at startup, so a new config or rule needs a new container.
-  lifecycle {
-    replace_triggered_by = [local_file.config, terraform_data.rules]
+# A new config (more targets) or rule is loaded without replacing the
+# container, so metrics and alerts never stop. SIGHUP makes Prometheus read
+# its config and rule files again. promtool checks both first because an
+# invalid file is only logged on reload: this way apply fails, Prometheus
+# keeps the old ones and the next apply tries again. It also runs once after
+# the container is created, a harmless reload of the same files.
+resource "terraform_data" "reload" {
+  triggers_replace = [local_file.config.content_sha256, local.rules_hash]
+
+  provisioner "local-exec" {
+    command = "docker exec ${docker_container.prometheus.name} promtool check config /etc/prometheus/prometheus.yml && docker kill --signal HUP ${docker_container.prometheus.name}"
   }
 }

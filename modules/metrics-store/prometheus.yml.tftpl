@@ -11,7 +11,7 @@ global:
 
 # Alerting rules, mounted read-only from the rules folder.
 rule_files:
-  - /etc/prometheus/rules/*.rules.yml
+  - /etc/prometheus-rules/*.rules.yml
 %{ endif ~}
 %{ if length(alertmanagers) > 0 ~}
 
