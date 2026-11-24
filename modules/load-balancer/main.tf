@@ -104,11 +104,13 @@ resource "docker_container" "haproxy" {
 # their requests; the listening port stays open. The check comes first because
 # a reload with an invalid file is only logged: this way apply fails, HAProxy
 # keeps the old config and the next apply tries again. It also runs once after
-# the container is created, a harmless reload of the same file.
+# the container is created, a harmless reload of the same file. The signal is
+# sent from inside (kill to PID 1, the master): docker kill --signal marks the
+# container as stopped by hand, and Docker would then never restart it.
 resource "terraform_data" "reload" {
   triggers_replace = local_file.config.content_sha256
 
   provisioner "local-exec" {
-    command = "docker exec ${docker_container.haproxy.name} haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg && docker kill --signal USR2 ${docker_container.haproxy.name}"
+    command = "docker exec ${docker_container.haproxy.name} haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg && docker exec ${docker_container.haproxy.name} kill -USR2 1"
   }
 }

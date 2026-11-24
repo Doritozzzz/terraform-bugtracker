@@ -127,11 +127,13 @@ resource "docker_container" "prometheus" {
 # its config and rule files again. promtool checks both first because an
 # invalid file is only logged on reload: this way apply fails, Prometheus
 # keeps the old ones and the next apply tries again. It also runs once after
-# the container is created, a harmless reload of the same files.
+# the container is created, a harmless reload of the same files. The signal is
+# sent from inside (kill to PID 1, Prometheus): docker kill --signal marks the
+# container as stopped by hand, and Docker would then never restart it.
 resource "terraform_data" "reload" {
   triggers_replace = [local_file.config.content_sha256, local.rules_hash]
 
   provisioner "local-exec" {
-    command = "docker exec ${docker_container.prometheus.name} promtool check config /etc/prometheus/prometheus.yml && docker kill --signal HUP ${docker_container.prometheus.name}"
+    command = "docker exec ${docker_container.prometheus.name} promtool check config /etc/prometheus/prometheus.yml && docker exec ${docker_container.prometheus.name} kill -HUP 1"
   }
 }
