@@ -69,6 +69,11 @@ resource "docker_container" "proxy" {
     "ALLOW_LOGS=1",
     "EVENTS=0",
     "LOG_LEVEL=warning",
+    # Minutes a connection may stay idle (default 10). The collector keeps one
+    # open per container to follow its logs; a quiet container would have it
+    # cut every 10 minutes, and the collector warns each time it reconnects.
+    "TIMEOUT_CLIENT=1440",
+    "TIMEOUT_SERVER=1440",
   ]
 
   volumes {
