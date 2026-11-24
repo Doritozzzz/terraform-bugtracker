@@ -56,9 +56,10 @@ frontend admin
   default_backend index
 
 # Anything else: an index with a link to every tool. It is a backend because
-# http-request rules of the frontend run before use_backend is chosen.
+# http-request rules of the frontend run before use_backend is chosen. The page
+# is rendered next to this file; HAProxy reads it into memory when it loads.
 backend index
-  http-request return status 200 content-type "text/html; charset=utf-8" string "<!doctype html><title>Admin</title><h1>Admin tools</h1><ul>%{ for r in routes }<li><a href='${r.path_prefix}'>${r.name}</a></li>%{ endfor }</ul>"
+  http-request return status 200 content-type "text/html; charset=utf-8" file /usr/local/etc/haproxy/index.html
 
 %{ for r in routes ~}
 backend ${r.name}

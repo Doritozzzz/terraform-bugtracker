@@ -323,15 +323,53 @@ module "alert_manager" {
 module "admin_gateway" {
   source = "../../modules/admin-gateway"
 
-  name     = "${local.name_prefix}-admin"
-  port     = var.admin_port
-  networks = [docker_network.frontend.name, docker_network.admin.name]
+  name        = "${local.name_prefix}-admin"
+  port        = var.admin_port
+  title       = var.project
+  environment = var.environment
+  networks    = [docker_network.frontend.name, docker_network.admin.name]
   routes = [
-    { name = "grafana", path_prefix = "/grafana/", server = module.dashboards.backend },
-    { name = "prometheus", path_prefix = "/prometheus/", server = module.metrics_store.backend },
-    { name = "alertmanager", path_prefix = "/alertmanager/", server = module.alert_manager.target },
-    { name = "mail", path_prefix = "/mail/", server = module.mail_catcher.backend, strip_prefix = false },
-    { name = "minio", path_prefix = "/minio/", server = module.storage.console_backend },
+    {
+      name        = "grafana"
+      icon        = "/grafana/public/img/grafana_icon.svg"
+      group       = "Observability"
+      description = "Dashboards of the app, the containers and the host."
+      path_prefix = "/grafana/"
+      server      = module.dashboards.backend
+    },
+    {
+      name        = "prometheus"
+      icon        = "/prometheus/favicon.svg"
+      group       = "Observability"
+      description = "Metrics, queries and the state of the alert rules."
+      path_prefix = "/prometheus/"
+      server      = module.metrics_store.backend
+    },
+    {
+      name        = "alertmanager"
+      icon        = "/alertmanager/favicon.ico"
+      group       = "Alerting"
+      description = "Firing alerts, silences and notifications."
+      path_prefix = "/alertmanager/"
+      server      = module.alert_manager.target
+    },
+    {
+      name         = "mail"
+      icon         = "/mail/favicon.svg"
+      group        = "Alerting"
+      description  = "Inbox that catches the alert emails."
+      path_prefix  = "/mail/"
+      server       = module.mail_catcher.backend
+      strip_prefix = false
+    },
+    {
+      name        = "minio"
+      icon        = "/minio/favicon-32x32.png"
+      group       = "Storage"
+      description = "Console of the object storage: buckets and files."
+      path_prefix = "/minio/"
+      server      = module.storage.console_backend
+    },
   ]
   restart = "unless-stopped"
   memory  = 128

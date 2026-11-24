@@ -14,12 +14,15 @@ variable "networks" {
 }
 
 variable "routes" {
-  description = "One admin tool per path prefix. strip_prefix removes the prefix before forwarding, for tools that know their public path but serve from /; set it to false for tools that serve under the prefix themselves."
+  description = "One admin tool per path prefix, shown on the index page as a card with its optional description and icon (a URL, usually the tool's own logo under its prefix; without it, a coloured initial), under its optional group heading. strip_prefix removes the prefix before forwarding, for tools that know their public path but serve from /; set it to false for tools that serve under the prefix themselves."
   type = list(object({
     name         = string
     path_prefix  = string
     server       = string
     strip_prefix = optional(bool, true)
+    description  = optional(string)
+    group        = optional(string)
+    icon         = optional(string)
   }))
 
   validation {
@@ -28,6 +31,18 @@ variable "routes" {
     ])
     error_message = "At least one route. Each needs a name of lowercase letters, digits, _ or - (not \"index\") and a path_prefix like /grafana/ (one segment, slashes on both sides)."
   }
+}
+
+variable "title" {
+  description = "Name shown at the top of the index page, e.g. the project."
+  type        = string
+  default     = "Admin"
+}
+
+variable "environment" {
+  description = "Environment shown as a badge next to the title, so it is clear which one is open; prod is shown in red. Null: no badge."
+  type        = string
+  default     = null
 }
 
 variable "user" {

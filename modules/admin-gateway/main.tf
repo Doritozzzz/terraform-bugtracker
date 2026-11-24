@@ -33,6 +33,26 @@ resource "local_file" "config" {
   directory_permission = "0755"
 }
 
+# The index page, in the same mounted folder. HAProxy keeps it in a buffer of
+# 16 KB, so it stays a small page with inline CSS and no scripts.
+resource "local_file" "index" {
+  filename = "${dirname(local_file.config.filename)}/index.html"
+  content = templatefile("${path.module}/index.html.tftpl", {
+    title       = var.title
+    environment = var.environment
+    user        = var.user
+    routes      = var.routes
+    # One section per group, in the order the routes first use it.
+    groups = distinct([for r in var.routes : r.group])
+    # Colors of the initial shown when a route has no icon, taken in turn so
+    # neighbouring cards differ.
+    colors = ["#f46800", "#e6522c", "#7c3aed", "#0ea5e9", "#c72e49", "#16a34a"]
+  })
+
+  file_permission      = "0644"
+  directory_permission = "0755"
+}
+
 resource "docker_container" "haproxy" {
   name  = var.name
   image = docker_image.haproxy.image_id
@@ -101,13 +121,17 @@ resource "docker_container" "haproxy" {
 
   # terraform apply returns once the gateway is accepting traffic.
   wait = true
+
+  # HAProxy refuses to start if the page in its config is missing.
+  depends_on = [local_file.index]
 }
 
-# A new route is loaded without replacing the container, like in the load
+# A new route or page is loaded without replacing the container, like in the load
 # balancer: the config is checked, then SIGUSR2 goes to the master (PID 1)
 # from inside, because docker kill --signal would turn off the restart policy.
 resource "terraform_data" "reload" {
-  triggers_replace = local_file.config.content_sha256
+  # The page is also read only on load, so a change to it needs a reload too.
+  triggers_replace = [local_file.config.content_sha256, local_file.index.content_sha256]
 
   provisioner "local-exec" {
     command = "docker exec ${docker_container.haproxy.name} haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg && docker exec ${docker_container.haproxy.name} kill -USR2 1"
