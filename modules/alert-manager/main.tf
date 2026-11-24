@@ -1,6 +1,14 @@
 locals {
   # Port inside the container.
   http_port = 9093
+
+  # Address of the web UI, used in its links and those of the notifications.
+  # Behind a gateway the routes stay at /, so the healthcheck and Prometheus
+  # are unchanged.
+  web_flags = (
+    var.external_url != null ? ["--web.external-url=${var.external_url}", "--web.route-prefix=/"] :
+    var.port != null ? ["--web.external-url=http://127.0.0.1:${var.port}"] : []
+  )
 }
 
 resource "docker_image" "alertmanager" {
@@ -74,14 +82,13 @@ resource "docker_container" "alertmanager" {
     drop = ["ALL"]
   }
 
-  # Same as the image command, plus the address of its web UI (used in the
-  # links of the notifications) and no cluster port: with a single instance
-  # there are no peers to talk to.
+  # Same as the image command, plus the address of its web UI and no cluster
+  # port: with a single instance there are no peers to talk to.
   command = concat([
     "--config.file=/etc/alertmanager/alertmanager.yml",
     "--storage.path=/alertmanager",
     "--cluster.listen-address=",
-  ], var.port == null ? [] : ["--web.external-url=http://127.0.0.1:${var.port}"])
+  ], local.web_flags)
 
   volumes {
     host_path      = local_file.config.filename

@@ -1,4 +1,10 @@
 locals {
+  # Hosts the UI answers for: its published port and the gateway, if any.
+  allowed_hosts = concat(
+    var.port == null ? [] : ["127.0.0.1:${var.port}", "localhost:${var.port}"],
+    var.public_url == null ? [] : [regex("^https?://([^/]+)/", var.public_url)[0]],
+  )
+
   # Ports inside the container.
   smtp_port = 1025
   http_port = 8025
@@ -53,13 +59,18 @@ resource "docker_container" "mailpit" {
     "/tmp" = ""
   }
 
-  # The UI only answers requests addressed to its published address, so a web
+  # The UI only answers requests addressed to its public address, so a web
   # page cannot read the mailbox through DNS rebinding. No call to GitHub to
   # check for new versions.
-  command = [
-    "--allowed-hosts=127.0.0.1:${var.port},localhost:${var.port}",
-    "--disable-version-check",
-  ]
+  command = concat(
+    length(local.allowed_hosts) == 0 ? [] : ["--allowed-hosts=${join(",", local.allowed_hosts)}"],
+    ["--disable-version-check"],
+  )
+
+  # Served under the gateway path. An environment variable, not --webroot:
+  # the healthcheck the image ships (mailpit readyz) reads it too, while the
+  # flag would make it fail.
+  env = var.public_url == null ? null : ["MP_WEBROOT=${regex("^https?://[^/]+(/.*)$", var.public_url)[0]}"]
 
   dynamic "networks_advanced" {
     for_each = var.networks
@@ -70,10 +81,13 @@ resource "docker_container" "mailpit" {
 
   # Published on localhost only: the Docker default (0.0.0.0) would expose it
   # to the whole local network.
-  ports {
-    internal = local.http_port
-    external = var.port
-    ip       = "127.0.0.1"
+  dynamic "ports" {
+    for_each = var.port == null ? [] : [var.port]
+    content {
+      internal = local.http_port
+      external = ports.value
+      ip       = "127.0.0.1"
+    }
   }
 
   # The image already ships a healthcheck (mailpit readyz).

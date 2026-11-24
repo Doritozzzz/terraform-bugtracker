@@ -4,13 +4,25 @@ variable "name" {
 }
 
 variable "networks" {
-  description = "Networks to join: the one where the senders are, plus one that is not internal to publish the web UI."
+  description = "Networks to join: the one where the senders are, plus the one people reach the web UI from (a gateway's network, or one that is not internal to publish the port)."
   type        = list(string)
 }
 
 variable "port" {
-  description = "Port on 127.0.0.1 where the web UI with the received mail is served."
+  description = "Port on 127.0.0.1 where the web UI with the received mail is published. Null keeps it unpublished, e.g. behind a gateway."
   type        = number
+  default     = null
+}
+
+variable "public_url" {
+  description = "Public URL when the web UI is served under a path of a gateway that keeps it, e.g. http://127.0.0.1:8081/mail/. Mailpit then serves under that path and only answers requests for that host. Null: served from the root of its port."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.public_url == null ? true : can(regex("^https?://[^/]+/[^/]+/$", var.public_url))
+    error_message = "public_url must look like http://host:port/path/ (one path segment, final /)."
+  }
 }
 
 variable "image" {

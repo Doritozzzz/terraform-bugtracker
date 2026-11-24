@@ -4,13 +4,19 @@ variable "name" {
 }
 
 variable "networks" {
-  description = "Networks to join: the ones where Prometheus and the mail server are, plus one that is not internal if port is set."
+  description = "Networks to join: the ones where Prometheus and the mail server are, the one people reach it from (a gateway's network, or one that is not internal if port is set), and one that is not internal to reach a chat service such as Telegram."
   type        = list(string)
 }
 
 variable "port" {
   description = "Port on 127.0.0.1 for the web UI (list and silence alerts). Null keeps it unpublished."
   type        = number
+  default     = null
+}
+
+variable "external_url" {
+  description = "Public URL when the web UI is served under a path of a gateway that removes it, e.g. http://127.0.0.1:8081/alertmanager/. Used in its links and those of the notifications. Null: served from the root of its port."
+  type        = string
   default     = null
 }
 

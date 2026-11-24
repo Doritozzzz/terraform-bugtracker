@@ -47,9 +47,10 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | name | Container name. It is also the hostname Prometheus sends alerts to. | `string` | n/a | yes |
-| networks | Networks to join: the ones where Prometheus and the mail server are, plus one that is not internal if port is set. | `list(string)` | n/a | yes |
+| networks | Networks to join: the ones where Prometheus and the mail server are, the one people reach it from (a gateway's network, or one that is not internal if port is set), and one that is not internal to reach a chat service such as Telegram. | `list(string)` | n/a | yes |
 | dashboard\_url | Optional base URL of Grafana. Alerts with a dashboard annotation (a path) get a full link to it in their notifications. | `string` | `null` | no |
 | email | Optional email receiver: SMTP server as host:port (plain SMTP, e.g. a test server), sender and recipient. | <pre>object({<br/>    smarthost = string<br/>    from      = string<br/>    to        = string<br/>  })</pre> | `null` | no |
+| external\_url | Public URL when the web UI is served under a path of a gateway that removes it, e.g. http://127.0.0.1:8081/alertmanager/. Used in its links and those of the notifications. Null: served from the root of its port. | `string` | `null` | no |
 | image | Alertmanager image. Pinned to an exact version so every machine runs the same one. | `string` | `"prom/alertmanager:v0.35.0"` | no |
 | labels | Docker labels for the container, e.g. environment and service, used by monitoring to filter it. | `map(string)` | `{}` | no |
 | memory | Memory limit in MB. Null means no limit. | `number` | `null` | no |
@@ -61,6 +62,6 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 
 | Name | Description |
 | ---- | ----------- |
-| target | host:port where Prometheus sends alerts (inside the Docker network). |
-| url | URL of the web UI on the host, or null when it is not published. |
+| target | host:port where Prometheus sends alerts, and of the web UI for a gateway (inside the Docker network). |
+| url | URL people open: external\_url, or the published port. Null when neither is set. |
 <!-- END_TF_DOCS -->
