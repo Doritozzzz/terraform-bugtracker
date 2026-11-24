@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/MinIO-S3-C72E49?style=for-the-badge&logo=minio&logoColor=white" alt="MinIO" />
   <img src="https://img.shields.io/badge/Prometheus-3.16-E6522C?style=for-the-badge&logo=prometheus&logoColor=white" alt="Prometheus" />
   <img src="https://img.shields.io/badge/Grafana-13.3-F46800?style=for-the-badge&logo=grafana&logoColor=white" alt="Grafana" />
-  <img src="https://img.shields.io/badge/Tests-72%20Passed-success?style=for-the-badge&logo=githubactions&logoColor=white" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-93%20Passed-success?style=for-the-badge&logo=githubactions&logoColor=white" alt="Tests" />
 </p>
 
 A complete, production-style infrastructure for an IT incident tracker (Node.js, PostgreSQL, Redis), written as
@@ -295,9 +295,9 @@ replicas, the cache, the images and their permissions, container hardening, admi
 gateway and its login, high availability, database
 persistence, logs and metrics per environment, and an alert from firing to resolved email.
 
-> **Full test execution log:** [docs/evidence/test-results.txt](docs/evidence/test-results.txt) (`75 passed, 0 failed`:
+> **Full test execution log:** [docs/evidence/test-results.txt](docs/evidence/test-results.txt) (`93 passed, 0 failed`:
 > run with `FRESH=1` from nothing, which adds one check, that nothing of the project was left after destroying).
-> Run from the submission zip without Telegram, the suite reports `72 passed`: the check on versioned files needs a
+> Run from the submission zip without Telegram, the suite reports `90 passed`: the check on versioned files needs a
 > git clone and the Telegram check needs a bot, so both are skipped with an `INFO` line saying why.
 > Alert rule tests: [docs/evidence/alert-rules-tests.txt](docs/evidence/alert-rules-tests.txt).
 
