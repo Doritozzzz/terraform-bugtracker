@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help init fmt validate docs plan apply up up-all output stop start destroy recreate-db ps \
+.PHONY: help init fmt validate docs plan apply up up-all output stop start destroy recreate-db ps demo-deploy demo-talk \
         test-db kill-db start-db test-cache kill-cache start-cache kill-storage start-storage kill-web start-web status urls passwords test test-alerts demo dist
 
 # Environment for the Terraform targets: dev (default) or prod, e.g. make up ENV=prod.
@@ -138,8 +138,14 @@ test-alerts: ## Check the alerting rules and run their unit tests
 test: ## Converge dev and prod and verify them end to end (FRESH=1: from nothing)
 	@bash scripts/test.sh
 
-demo: ## Guided 10-minute demonstration of prod (bash scripts/demo.sh --auto: no pauses)
+demo: ## Guided 10-minute demo; step 1 destroys and deploys everything live
 	@bash scripts/demo.sh
+
+demo-deploy: ## Only step 1 of the demo: destroy and deploy both, waiting until done
+	@bash scripts/demo.sh --to 1
+
+demo-talk: ## The demo from step 2 (after make demo-deploy)
+	@bash scripts/demo.sh --from 2
 
 dist: ## Build dist/terraform-bugtracker.zip from the committed files
 	@git diff --quiet HEAD || echo 'warning: uncommitted changes are not in the zip (git archive uses HEAD)'
