@@ -149,6 +149,32 @@ deploy_line() {
   fi
 }
 
+# The default browser's command, from its .desktop file (e.g. "firefox").
+browser_cmd() {
+  local d f
+  d=$(xdg-settings get default-web-browser 2>/dev/null) || return 1
+  for f in "$HOME/.local/share/applications/$d" "/usr/share/applications/$d" "/var/lib/flatpak/exports/share/applications/$d"; do
+    [ -f "$f" ] && sed -n 's/^Exec=//p' "$f" | head -n 1 | sed 's/ %[uUfF]//g' && return 0
+  done
+  return 1
+}
+
+# browse URL...: every URL in one call to the browser, so no tab gets lost
+# (several calls in a row can drop one). Without a known browser, xdg-open.
+browse() {
+  local cmd url args=()
+  if cmd=$(browser_cmd) && [ -n "$cmd" ]; then
+    # Firefox opens a list of URLs in a new window unless each is a --new-tab.
+    for url in "$@"; do
+      case $cmd in *firefox*) args+=(--new-tab "$url") ;; *) args+=("$url") ;; esac
+    done
+    # shellcheck disable=SC2086  # the command may hold arguments
+    setsid $cmd "${args[@]}" >/dev/null 2>&1 &
+  else
+    for url in "$@"; do setsid xdg-open "$url" >/dev/null 2>&1 & sleep 1.5; done
+  fi
+}
+
 # Opens scripts/deploy-watch.sh (progress bars of the deploy) in a new terminal
 # window, with the first terminal emulator found.
 open_watcher() {
@@ -327,7 +353,7 @@ step_1() {
 
 step_2() {
   headline "Two environments, each with its own networks. Only two ports reach the host: the app and the admin gateway."
-  xdg-open docs/images/architecture.svg >/dev/null 2>&1 &
+  browse docs/images/architecture.svg
   open "docs/images/architecture.svg (opened in the browser)"
   why "frontend: the only two ways in" \
     "app, backend: the users' path; the LB never reaches the database" \
@@ -402,10 +428,22 @@ step_6() {
 access_open() {
   access
   echo
-  xdg-open "$(tfout prod app_url)/#/system" >/dev/null 2>&1 &
-  xdg-open "$(tfout prod admin_url)" >/dev/null 2>&1 &
-  open "The app (System tab) and the admin gateway, opened in the browser." \
-    "Also at any time: bash scripts/demo.sh --access"
+  # The first tabs carry the gateway login in their URL, so they open logged
+  # in. Prometheus and the MinIO console cannot: their pages fetch their data
+  # from their own address, and browsers refuse requests to a URL holding a
+  # login (a reload keeps it). They open a few seconds later with a clean URL,
+  # and the browser reuses the login of the first tabs.
+  local plain admin
+  plain=$(tfout prod admin_url)
+  admin=${plain/\/\//\/\/admin:$(tfout prod admin_password)@}
+  browse "$(tfout prod app_url)/#/system" "$admin/" "$admin/grafana/d/status/bugtracker-status" \
+    "$admin/alertmanager/" "$admin/mail/"
+  sleep 3
+  browse "$plain/prometheus/query" "$plain/minio/"
+  open "Opened: the app (System), the admin index, Grafana, Alertmanager," \
+    "mailbox, then Prometheus and MinIO, logged in to the gateway." \
+    "Grafana and MinIO: their own login, in the table." \
+    "Any time: bash scripts/demo.sh --access"
 }
 
 step_7() {
