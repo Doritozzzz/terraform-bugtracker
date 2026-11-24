@@ -256,24 +256,29 @@ main { padding-bottom: var(--space-12); }
 .metric-sub { color: var(--muted); font-size: var(--text-sm); line-height: var(--leading-sm); }
 
 
-/* Donut */
-.donut-wrap { display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap; }
+/* Charts: data marks have square ends (only controls and containers are
+   rounded), values and labels keep the text colours and the mark beside
+   them carries the colour. */
+
+/* Donut. The SVG's 120-unit viewBox is drawn 144px (9rem) wide, so its text
+   sizes are divided by 1.2 to land on the type scale. */
+.donut-wrap { display: flex; align-items: center; gap: var(--space-8); flex-wrap: wrap; }
 .donut { display: block; width: 9rem; height: 9rem; flex: none; }
 .donut circle { fill: none; stroke-width: 12; }
 .donut .ring { stroke: var(--surface-2); }
-.donut .seg { stroke: var(--c); transition: stroke-dasharray 0.4s; }
-.donut-total { font-size: 18px; font-weight: 600; fill: var(--text); font-variant-numeric: tabular-nums; }
-.donut-label { font-size: 8px; fill: var(--muted); }
-.legend { flex: 1; min-width: 10rem; display: grid; gap: 0.6rem; }
-.legend li { display: flex; align-items: center; gap: 0.6rem; }
+.donut .seg { stroke: var(--c); }
+.donut-total { font-size: calc(var(--text-xl) / 1.2); font-weight: var(--weight-semibold); fill: var(--text); font-variant-numeric: tabular-nums; }
+.donut-label { font-size: calc(var(--text-xs) / 1.2); fill: var(--muted); }
+.legend { flex: 1; min-width: 10rem; display: grid; gap: var(--space-3); }
+.legend li { display: flex; align-items: center; gap: var(--space-2); }
 .legend .legend-value { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: var(--weight-medium); }
-.legend .legend-pct { width: 2.75rem; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.legend .legend-pct { width: var(--space-12); text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Bars */
-.bar-row { display: grid; grid-template-columns: 5rem 1fr auto; gap: 0.75rem; align-items: center; margin: 0.7rem 0; }
+.bar-row { display: grid; grid-template-columns: 5rem 1fr auto; gap: var(--space-3); align-items: center; margin: var(--space-3) 0; }
 .bar-label { color: var(--muted); }
-.bar { height: 0.5rem; overflow: hidden; border-radius: 999px; background: var(--surface-2); }
-.bar > span { display: block; height: 100%; border-radius: inherit; background: var(--c); transition: width 0.4s; }
+.bar { height: var(--space-2); overflow: hidden; background: var(--surface-2); }
+.bar > span { display: block; height: 100%; background: var(--c); }
 .bar-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: var(--weight-medium); }
 
 /* Feed */
@@ -376,9 +381,10 @@ main { padding-bottom: var(--space-12); }
   height: var(--space-6);
 }
 
-/* Sparkline */
-.spark { display: block; width: 100%; height: 2.25rem; }
-.spark-line { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+/* Sparkline: latency is data, so it is drawn in the accent; the service's
+   state is the dot and the text above it. */
+.spark { display: block; width: 100%; height: var(--space-8); }
+.spark-line { fill: none; stroke: currentColor; stroke-width: var(--line-thick); stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .spark-area { fill: currentColor; opacity: 0.1; stroke: none; }
 
 /* Services */
@@ -390,7 +396,7 @@ main { padding-bottom: var(--space-12); }
 .svc h3 { font-size: var(--text-base); font-weight: var(--weight-semibold); }
 .svc-state { margin-top: var(--space-4); font-size: var(--text-md); line-height: var(--leading-md); font-weight: var(--weight-semibold); }
 .svc-latency { color: var(--muted); }
-.svc-spark { margin-top: var(--space-2); color: var(--c); }
+.svc-spark { margin-top: var(--space-2); color: var(--accent); }
 .svc-logs { display: inline-block; margin-top: var(--space-2); }
 
 /* Monitoring links */
@@ -466,17 +472,13 @@ a.tag:hover { text-decoration: underline; text-underline-offset: var(--space-1);
 #env-badge::before { display: none; }
 #instance-badge { color: var(--muted); font-size: var(--text-xs); }
 
-/* Load balancing: one cell per status check, coloured by the replica that answered */
-.lb-strip { display: flex; gap: 3px; min-height: 1.5rem; margin: 0 0 1rem; padding: 0; list-style: none; }
-.lb-cell {
-  flex: 1; max-width: 1.25rem; height: 1.5rem; border-radius: 4px;
-  background: color-mix(in srgb, var(--c) 75%, transparent);
-}
-/* The newest check: outlined, and the only cell that animates on each render. */
-.lb-cell:last-child { outline: 2px solid var(--c); outline-offset: 1px; animation: lb-in 0.3s ease-out; }
-.lb-row { grid-template-columns: 11rem 1fr 3rem; }
-@keyframes lb-in { from { opacity: 0; transform: scaleY(0.4); } }
-@media (prefers-reduced-motion: reduce) { .lb-cell { animation: none; } }
+/* Load balancing: one cell per status check, coloured by the replica that
+   answered, with a 2px gap so neighbours of similar colour stay apart. */
+.lb-strip { display: flex; gap: var(--line-thick); min-height: var(--space-6); margin: 0 0 var(--space-4); padding: 0; list-style: none; }
+.lb-cell { flex: 1; max-width: var(--space-4); height: var(--space-6); background: var(--c); }
+/* The newest check is outlined. */
+.lb-cell:last-child { outline: var(--line-thick) solid var(--text); outline-offset: var(--line); }
+.lb-row { grid-template-columns: 11rem 1fr var(--space-12); }
 
 /* Buttons and inputs: one height and one radius for every control. */
 .btn {
