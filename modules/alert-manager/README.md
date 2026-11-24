@@ -28,6 +28,7 @@ module "alert_manager" {
 
 - Alerts are expected to carry `severity` and `service` labels and, optionally, a `dashboard` annotation (a path).
 - Email and Telegram send the same plain text, and also when the alert is resolved.
+- Behind a gateway that serves it under a path, set `external_url` (`http://127.0.0.1:8081/alertmanager/`) instead of `port`: its links and those of the notifications use it, while the routes stay at `/`. A Telegram receiver needs a network that is not internal.
 - Silences and the notification log are kept on a named volume, so nothing is sent twice after a restart.
 - The rendered config holds the bot token: it lives in the ignored `.generated/` folder, like the state.
 

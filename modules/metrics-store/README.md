@@ -33,6 +33,7 @@ module "metrics_store" {
 - The config is rendered to `<root>/.generated/<name>/prometheus.yml` and its folder is mounted read-only. A change of config or rules is checked with `promtool` and then loaded with `SIGHUP`, without replacing the container. Needs the `docker` CLI where Terraform runs.
 - `port` publishes the web UI on 127.0.0.1; leave it null in production.
 - Runs as `nobody`, read-only, with no capabilities.
+- Behind a gateway that serves it under a path, set `external_url` (`http://127.0.0.1:8081/prometheus/`): the UI builds its links with it while the routes stay at `/` (`--web.route-prefix=/`), so the healthcheck, the scrapes and Grafana are unchanged. `backend` gives the gateway its `host:port`.
 
 Every container also takes the optional `restart`, `memory` (MB, hard limit) and `labels` inputs; `null` keeps Docker's default.
 

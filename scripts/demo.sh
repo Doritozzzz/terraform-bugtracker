@@ -81,7 +81,7 @@ wait_until() {
   echo
 }
 
-mail_subjects() { curl -s -u "$MAIL_AUTH" "$MAIL/api/v1/messages" | python3 -c 'import sys,json; [print(m["Subject"]) for m in json.load(sys.stdin)["messages"]]'; }
+mail_subjects() { curl -s -u "$ADMIN_AUTH" "$MAIL/api/v1/messages" | python3 -c 'import sys,json; [print(m["Subject"]) for m in json.load(sys.stdin)["messages"]]'; }
 mail_has() { mail_subjects | grep -q "$1"; }
 healthy() { [ "$(docker inspect -f '{{.State.Health.Status}}' "$1" 2>/dev/null)" = healthy ]; }
 replica_healthy() { healthy bugtracker-prod-web-2; }
@@ -109,9 +109,11 @@ APP=$(tfout prod app_url)
 GRAFANA=$(tfout prod grafana_url)
 MAIL=$(tfout prod mail_url)
 MAIL=${MAIL%/}   # without the final /, so $MAIL/api/... has no //
-# The mailbox is behind the admin gateway. Exported so the commands shown on
-# screen can say $MAIL_AUTH instead of printing the password.
-export MAIL_AUTH="admin:$(tfout prod admin_password)"
+ADMIN=$(tfout prod admin_url)
+# Login of the admin gateway, in front of every admin tool (the mailbox too).
+# Exported so the commands shown on screen can say $ADMIN_AUTH instead of
+# printing the password.
+export ADMIN_AUTH="admin:$(tfout prod admin_password)"
 
 # ---------------------------------------------------------- 2. environments
 
@@ -119,13 +121,13 @@ step "Two environments running side by side" \
   "Dev and prod are separate Terraform roots with their own state. Every container carries labels with its project, environment and service."
 run "make urls"
 run "for env in dev prod; do printf '%-5s %s containers\n' \$env \$(docker ps -q --filter label=environment=\$env | wc -l); done"
-look "Open the app in prod: $APP"
+look "Open the app in prod: $APP   Admin tools: $ADMIN (user admin, password: make passwords), then each tool."
 pause
 
 # -------------------------------------------------------- 3. modules / tfvars
 
 step "Same modules, different settings" \
-  "Both environments use the same reusable modules. What changes is a short settings file per environment: prod has three replicas and publishes fewer admin tools."
+  "Both environments use the same reusable modules. What changes is a short settings file per environment: prod has three replicas, the cache and the alerts."
 run "ls modules"
 run "grep -v '^#' environments/dev/terraform.tfvars"
 run "grep -v '^#' environments/prod/terraform.tfvars"
@@ -164,7 +166,7 @@ step "A replica fails: users notice nothing" \
 run "make --no-print-directory kill-web ENV=prod"
 REPLICA_DOWN=1
 T_DOWN=$SECONDS
-curl -s -u "$MAIL_AUTH" -X DELETE "$MAIL/api/v1/messages" >/dev/null
+curl -s -u "$ADMIN_AUTH" -X DELETE "$MAIL/api/v1/messages" >/dev/null
 sleep 8
 run "for i in \$(seq 20); do curl -s -o /dev/null -w '%{http_code} ' $APP/api/incidents; done; echo"
 look "Grafana, Status dashboard ($GRAFANA): web-2 is DOWN in red, and availability stays at 100%."
@@ -197,7 +199,7 @@ step "The alert reaches the team" \
 printf '\n%sWaiting for the email%s' "$D" "$N"
 if wait_until 150 mail_has 'FIRING.*WebReplicaDown'; then
   result "Email received $((SECONDS - T_DOWN)) s after the replica stopped."
-  run "curl -s -u \$MAIL_AUTH $MAIL/api/v1/message/latest | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d[\"Subject\"]); print(); print(d[\"Text\"].strip())'"
+  run "curl -s -u \$ADMIN_AUTH $MAIL/api/v1/message/latest | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d[\"Subject\"]); print(); print(d[\"Text\"].strip())'"
 else
   problem "No alert email within 150 s."
 fi
@@ -235,8 +237,9 @@ pause
 # ----------------------------------------------------------- 12. security
 
 step "Secure by default" \
-  "Ports only on this machine, no container running as root (two documented exceptions need the Docker socket), read-only filesystems, and secrets never in Git."
+  "Only two ports, both on this machine: the app and the admin gateway. Every admin tool sits on an internal network behind its login. No container runs as root (two documented exceptions need the Docker socket), filesystems are read-only, and secrets are never in Git."
 run "docker ps --filter label=environment=prod --format '{{.Ports}}' | tr ',' '\n' | grep -o '[0-9.]*:[0-9]*->' | sort -u"
+run "curl -s -o /dev/null -w 'without login: %{http_code}\\n' $ADMIN/prometheus/; curl -s -o /dev/null -w 'with login:    %{http_code}\\n' -u \$ADMIN_AUTH $ADMIN/prometheus/-/ready"
 run "for c in bugtracker-prod-web-1 bugtracker-prod-db bugtracker-prod-lb bugtracker-prod-grafana; do printf '%-26s user %s\n' \$c \$(docker exec \$c id -un); done"
 run "git check-ignore environments/prod/terraform.tfstate environments/prod/secrets.auto.tfvars"
 pause

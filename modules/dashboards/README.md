@@ -27,6 +27,7 @@ module "dashboards" {
 ## Notes
 
 - Grafana expands `$VAR` in provisioning files: write a literal `$` as `$$` in `json_data`.
+- Behind a gateway that serves it under a path (e.g. `admin-gateway`), leave `port` null and set `root_url` to the public URL (`http://127.0.0.1:8081/grafana/`): Grafana builds its links with it and keeps serving from `/`. `backend` gives the gateway its `host:port`.
 - Uses the plugins bundled in the image (nothing downloaded at startup) and does not call home (usage reports, update checks, news).
 - Logs JSON to stdout at `warn` (at `info` it logs every panel query).
 - Dashboards are reloaded when their files change, without replacing the container.

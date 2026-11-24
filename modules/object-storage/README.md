@@ -25,6 +25,7 @@ module "storage" {
 - The bucket policy only allows `s3:GetObject`: anonymous users cannot list, upload or delete (MinIO's built-in `download` policy would allow listing).
 - Every object gets a `Cache-Control` header (`no-cache` by default: browsers revalidate and changes show at once).
 - The official MinIO images are no longer published, so the Chainguard image is pinned by digest.
+- Behind a gateway that serves the console under a path, set `console_url` (`http://127.0.0.1:8081/minio/`, with the final `/` or the console shows a blank page) and leave `console_port` null. `console_backend` gives the gateway its `host:port`.
 
 Every container also takes the optional `restart`, `memory` (MB, hard limit) and `labels` inputs; `null` keeps Docker's default.
 

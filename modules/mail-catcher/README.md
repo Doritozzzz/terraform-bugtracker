@@ -20,6 +20,7 @@ module "mail_catcher" {
 
 - The mailbox lives in memory: it is a test inbox, emptied on restart.
 - The web UI only answers requests for its published address, which blocks DNS rebinding.
+- Behind a gateway that keeps the path, set `public_url` (`http://127.0.0.1:8081/mail/`) instead of `port`: Mailpit serves under that path and only answers for that host. The path is set with `MP_WEBROOT`, because the `--webroot` flag makes the healthcheck the image ships fail. `backend` gives the gateway its `host:port`.
 - Runs as an unprivileged user (the image would run as root), read-only, with no capabilities.
 
 Every container also takes the optional `restart`, `memory` (MB, hard limit) and `labels` inputs; `null` keeps Docker's default.
