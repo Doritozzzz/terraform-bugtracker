@@ -236,7 +236,7 @@ main { padding-bottom: var(--space-12); }
   border-radius: var(--radius-md);
 }
 .card-head {
-  display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-1) var(--space-4);
   min-height: calc(var(--control-height) + var(--space-4)); padding: var(--space-4) var(--space-4) 0;
 }
 .card-head h2 { font-size: var(--text-base); font-weight: var(--weight-semibold); }
