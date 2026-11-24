@@ -54,7 +54,7 @@
           "refId": "LokiVariableQueryEditor-VariableQuery"
         },
         "definition": "label_values({environment=~\".+\"}, service)",
-        "refresh": 2,
+        "refresh": 1,
         "sort": 1
       },
       {
