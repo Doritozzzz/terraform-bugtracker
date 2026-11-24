@@ -81,7 +81,7 @@ wait_until() {
   echo
 }
 
-mail_subjects() { curl -s "$MAIL/api/v1/messages" | python3 -c 'import sys,json; [print(m["Subject"]) for m in json.load(sys.stdin)["messages"]]'; }
+mail_subjects() { curl -s -u "$MAIL_AUTH" "$MAIL/api/v1/messages" | python3 -c 'import sys,json; [print(m["Subject"]) for m in json.load(sys.stdin)["messages"]]'; }
 mail_has() { mail_subjects | grep -q "$1"; }
 healthy() { [ "$(docker inspect -f '{{.State.Health.Status}}' "$1" 2>/dev/null)" = healthy ]; }
 replica_healthy() { healthy bugtracker-prod-web-2; }
@@ -108,6 +108,10 @@ pause
 APP=$(tfout prod app_url)
 GRAFANA=$(tfout prod grafana_url)
 MAIL=$(tfout prod mail_url)
+MAIL=${MAIL%/}   # without the final /, so $MAIL/api/... has no //
+# The mailbox is behind the admin gateway. Exported so the commands shown on
+# screen can say $MAIL_AUTH instead of printing the password.
+export MAIL_AUTH="admin:$(tfout prod admin_password)"
 
 # ---------------------------------------------------------- 2. environments
 
@@ -160,7 +164,7 @@ step "A replica fails: users notice nothing" \
 run "make --no-print-directory kill-web ENV=prod"
 REPLICA_DOWN=1
 T_DOWN=$SECONDS
-curl -s -X DELETE "$MAIL/api/v1/messages" >/dev/null
+curl -s -u "$MAIL_AUTH" -X DELETE "$MAIL/api/v1/messages" >/dev/null
 sleep 8
 run "for i in \$(seq 20); do curl -s -o /dev/null -w '%{http_code} ' $APP/api/incidents; done; echo"
 look "Grafana, Status dashboard ($GRAFANA): web-2 is DOWN in red, and availability stays at 100%."
@@ -193,7 +197,7 @@ step "The alert reaches the team" \
 printf '\n%sWaiting for the email%s' "$D" "$N"
 if wait_until 150 mail_has 'FIRING.*WebReplicaDown'; then
   result "Email received $((SECONDS - T_DOWN)) s after the replica stopped."
-  run "curl -s $MAIL/api/v1/message/latest | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d[\"Subject\"]); print(); print(d[\"Text\"].strip())'"
+  run "curl -s -u \$MAIL_AUTH $MAIL/api/v1/message/latest | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d[\"Subject\"]); print(); print(d[\"Text\"].strip())'"
 else
   problem "No alert email within 150 s."
 fi
@@ -240,7 +244,7 @@ pause
 # -------------------------------------------------------------- 13. tests
 
 step "Everything is tested" \
-  "The alert rules have unit tests, and make test checks both environments end to end in 84 checks, 85 when it deploys from nothing (that full run is in docs/evidence)."
+  "The alert rules have unit tests, and make test checks both environments end to end in 92 checks, 93 when it deploys from nothing (that full run is in docs/evidence)."
 run "make --no-print-directory test-alerts"
 run "tail -n 1 docs/evidence/test-results.txt"
 if mail_has 'RESOLVED.*WebReplicaDown'; then result "And the 'resolved' email has already arrived."; fi

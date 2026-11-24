@@ -12,11 +12,28 @@ locals {
     project     = var.project
     environment = var.environment
   }
+
+  # The admin gateway; each tool builds its links with its path under it.
+  admin_url = "http://127.0.0.1:${var.admin_port}"
 }
 
-# Network with access to the outside. Only containers that publish a port join it.
+# Network with access to the outside, for the only two containers that
+# publish a port: the load balancer (the app) and the admin gateway.
 resource "docker_network" "frontend" {
   name = "${local.name_prefix}-frontend"
+}
+
+# Internal network of the admin tools: only people reach it, and only through
+# the admin gateway. The tools keep their data flows on app and monitoring.
+resource "docker_network" "admin" {
+  name     = "${local.name_prefix}-admin"
+  internal = true
+}
+
+# Way out to the internet with no published port, like a NAT gateway: only
+# Alertmanager joins it, to reach Telegram.
+resource "docker_network" "egress" {
+  name = "${local.name_prefix}-egress"
 }
 
 # Internal network: no access to the outside. Only the web, PostgreSQL and Redis join it.
@@ -99,8 +116,8 @@ module "web" {
     REDIS_PASSWORD    = module.cache.password
     # Only used to report whether the images are being served.
     STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
-    # Links shown in the System view; the app never calls them.
-    GRAFANA_URL      = module.dashboards.url
+    # Links shown in the System view, through the admin gateway; the app never calls them.
+    GRAFANA_URL      = "${local.admin_url}/grafana"
     ALERTMANAGER_URL = module.alert_manager.url
     MAIL_URL         = module.mail_catcher.url
   }
@@ -130,19 +147,19 @@ module "load_balancer" {
 }
 
 # Shared storage for the images of the web: one copy for every replica,
-# like S3 in the cloud. Only on the app network, where the load balancer and
-# the web reach it. The admin console is a dev tool and is not published here,
-# so MinIO stays off the frontend network and has no access to the outside.
+# like S3 in the cloud. On the app network so the load balancer and the web
+# reach it, and on admin for its console.
 module "storage" {
   source = "../../modules/object-storage"
 
-  name       = "${local.name_prefix}-storage"
-  networks   = [docker_network.app.name]
-  bucket     = "images"
-  source_dir = "${path.module}/../../images"
-  restart    = "unless-stopped"
-  memory     = 256
-  labels     = merge(local.labels, { service = "storage" })
+  name        = "${local.name_prefix}-storage"
+  networks    = [docker_network.app.name, docker_network.admin.name]
+  bucket      = "images"
+  source_dir  = "${path.module}/../../images"
+  console_url = "${local.admin_url}/minio/"
+  restart     = "unless-stopped"
+  memory      = 256
+  labels      = merge(local.labels, { service = "storage" })
 }
 
 # Central log store: every container log of this environment ends up here.
@@ -183,14 +200,14 @@ module "container_metrics" {
   labels      = merge(local.labels, { service = "container-metrics" })
 }
 
-# Collects and stores the metrics of this environment. Its web UI is not
-# published in prod: Grafana is the way in.
+# Collects and stores the metrics of this environment.
 module "metrics_store" {
   source = "../../modules/metrics-store"
 
   name = "${local.name_prefix}-prometheus"
-  # app to scrape the load balancer and the replicas.
-  networks = [docker_network.monitoring.name, docker_network.app.name]
+  # app to scrape the load balancer and the replicas; admin for its web UI.
+  networks     = [docker_network.monitoring.name, docker_network.app.name, docker_network.admin.name]
+  external_url = "${local.admin_url}/prometheus/"
 
   scrape_jobs = [
     {
@@ -224,9 +241,9 @@ module "dashboards" {
   source = "../../modules/dashboards"
 
   name = "${local.name_prefix}-grafana"
-  # frontend only to publish its port on the host.
-  networks = [docker_network.monitoring.name, docker_network.frontend.name]
-  port     = var.grafana_port
+  # monitoring to read the data sources; admin for its web UI.
+  networks = [docker_network.monitoring.name, docker_network.admin.name]
+  root_url = "${local.admin_url}/grafana/"
 
   datasources = [
     { uid = "prometheus", name = "Prometheus", type = "prometheus", url = module.metrics_store.internal_url, default = true },
@@ -262,12 +279,12 @@ module "mail_catcher" {
   source = "../../modules/mail-catcher"
 
   name = "${local.name_prefix}-mailpit"
-  # frontend only to publish its web UI on the host.
-  networks = [docker_network.monitoring.name, docker_network.frontend.name]
-  port     = var.mail_port
-  restart  = "unless-stopped"
-  memory   = 64
-  labels   = merge(local.labels, { service = "mail-catcher" })
+  # monitoring to receive the mail; admin for its web UI.
+  networks   = [docker_network.monitoring.name, docker_network.admin.name]
+  public_url = "${local.admin_url}/mail/"
+  restart    = "unless-stopped"
+  memory     = 64
+  labels     = merge(local.labels, { service = "mail-catcher" })
 }
 
 # Groups the alerts of Prometheus and notifies them. Only prod notifies; dev
@@ -276,9 +293,11 @@ module "alert_manager" {
   source = "../../modules/alert-manager"
 
   name = "${local.name_prefix}-alertmanager"
-  # frontend only to publish its web UI, where alerts can be listed and silenced.
-  networks = [docker_network.monitoring.name, docker_network.frontend.name]
-  port     = var.alertmanager_port
+  # monitoring to get the alerts and send the mail; admin for its web UI, where
+  # alerts can be listed and silenced; egress to reach Telegram, only when it
+  # is configured.
+  networks     = concat([docker_network.monitoring.name, docker_network.admin.name], var.telegram_bot_token == null ? [] : [docker_network.egress.name])
+  external_url = "${local.admin_url}/alertmanager/"
 
   email = {
     smarthost = module.mail_catcher.smtp_address
@@ -290,9 +309,30 @@ module "alert_manager" {
     bot_token = var.telegram_bot_token
     chat_id   = var.telegram_chat_id
   }
-  dashboard_url = module.dashboards.url
+  # Without the final /: the alerts give paths that start with one.
+  dashboard_url = "${local.admin_url}/grafana"
 
   restart = "unless-stopped"
   memory  = 64
   labels  = merge(local.labels, { service = "alert-manager" })
+}
+
+# The only way in to the admin tools: one port with a login, every tool under
+# its path. frontend to publish the port, admin to reach the tools.
+module "admin_gateway" {
+  source = "../../modules/admin-gateway"
+
+  name     = "${local.name_prefix}-admin"
+  port     = var.admin_port
+  networks = [docker_network.frontend.name, docker_network.admin.name]
+  routes = [
+    { name = "grafana", path_prefix = "/grafana/", server = module.dashboards.backend },
+    { name = "prometheus", path_prefix = "/prometheus/", server = module.metrics_store.backend },
+    { name = "alertmanager", path_prefix = "/alertmanager/", server = module.alert_manager.target },
+    { name = "mail", path_prefix = "/mail/", server = module.mail_catcher.backend, strip_prefix = false },
+    { name = "minio", path_prefix = "/minio/", server = module.storage.console_backend },
+  ]
+  restart = "unless-stopped"
+  memory  = 128
+  labels  = merge(local.labels, { service = "admin-gateway" })
 }

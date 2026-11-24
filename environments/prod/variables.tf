@@ -35,18 +35,8 @@ variable "lb_port" {
   type        = number
 }
 
-variable "grafana_port" {
-  description = "Port on 127.0.0.1 where Grafana is served."
-  type        = number
-}
-
-variable "alertmanager_port" {
-  description = "Port on 127.0.0.1 where the Alertmanager web UI is served."
-  type        = number
-}
-
-variable "mail_port" {
-  description = "Port on 127.0.0.1 where the test mailbox (Mailpit) is served."
+variable "admin_port" {
+  description = "Port on 127.0.0.1 of the admin gateway, the only way in to Grafana, Prometheus, Alertmanager, the mailbox and the MinIO console."
   type        = number
 }
 

@@ -178,7 +178,7 @@ for env in dev prod; do
   expect "$env: anonymous users cannot list the bucket" 403 "$(code "$url/images/")"
   expect "$env: anonymous users cannot upload" 403 "$(code -X PUT --data x "$url/images/hack.txt")"
 done
-expect "prod: MinIO publishes no port (no admin console)" "" "$(docker port bugtracker-prod-storage)"
+expect "prod: MinIO publishes no port (its console is behind the admin gateway)" "" "$(docker port bugtracker-prod-storage)"
 
 # ------------------------------------------------------------- 5. security
 
@@ -187,11 +187,16 @@ published=$(docker ps --filter label=project=bugtracker --format '{{.Ports}}' | 
 expect "every published port listens on 127.0.0.1 only" 0 "$published"
 
 # The admin tools publish no port: the gateway, with its login, is the only way in.
-expect "dev publishes only the app and the admin gateway" "bugtracker-dev-admin bugtracker-dev-lb" "$(published dev)"
-ADMIN_DEV=$(tfout dev admin_url)
-expect "dev: the admin gateway asks for its login" 401 "$(code "$ADMIN_DEV/grafana/")"
-for path in grafana/api/health prometheus/-/ready minio/; do
-  expect "dev: with the login, /$path answers through the gateway" 200 "$(code -u "admin:$(tfout dev admin_password)" "$ADMIN_DEV/$path")"
+# Prod also has Alertmanager and the mailbox.
+for env in dev prod; do
+  expect "$env publishes only the app and the admin gateway" "bugtracker-$env-admin bugtracker-$env-lb" "$(published "$env")"
+  admin=$(tfout "$env" admin_url)
+  expect "$env: the admin gateway asks for its login" 401 "$(code "$admin/grafana/")"
+  paths="grafana/api/health prometheus/-/ready minio/"
+  [ "$env" = prod ] && paths="$paths alertmanager/-/ready mail/readyz"
+  for path in $paths; do
+    expect "$env: with the login, /$path answers through the gateway" 200 "$(code -u "admin:$(tfout "$env" admin_password)" "$admin/$path")"
+  done
 done
 not_ro=$(for c in $(running dev; running prod); do docker inspect -f '{{.Name}} {{.HostConfig.ReadonlyRootfs}}' "$c"; done | grep -c false)
 expect "every container has a read-only root filesystem" 0 "$not_ro"
@@ -300,17 +305,21 @@ quiet() { [ "$(prom prod alerts | json "len(d['data']['alerts'])")" = 0 ]; }
 wait_for 120 quiet
 expect "no alert fires while everything is healthy" "[]" "$(prom prod alerts | json "[a['labels']['alertname'] for a in d['data']['alerts']]")"
 
+# The mailbox is behind the admin gateway: every call carries its login.
 MAIL=$(tfout prod mail_url)
-curl -s -X DELETE "$MAIL/api/v1/messages" >/dev/null
-mails() { curl -s "$MAIL/api/v1/messages" | json "' | '.join(m['Subject'] for m in d['messages'])"; }
+MAIL=${MAIL%/}   # without the final /, so $MAIL/api/... has no //
+MAIL_AUTH="admin:$(tfout prod admin_password)"
+curl -s -u "$MAIL_AUTH" -X DELETE "$MAIL/api/v1/messages" >/dev/null
+mails() { curl -s -u "$MAIL_AUTH" "$MAIL/api/v1/messages" | json "' | '.join(m['Subject'] for m in d['messages'])"; }
 t0=$(date +%s)
 docker stop bugtracker-prod-web-2 >/dev/null
 check "a stopped replica fires WebReplicaDown" wait_for 150 sh -c \
   "docker exec bugtracker-prod-prometheus wget -qO- http://127.0.0.1:9090/api/v1/alerts | grep -q '\"alertname\":\"WebReplicaDown\".*\"state\":\"firing\"'"
-check "and its email reaches the mailbox" wait_for 60 sh -c "curl -s '$MAIL/api/v1/messages' | grep -q 'FIRING:1\] WebReplicaDown (prod)'"
+check "and its email reaches the mailbox" wait_for 60 sh -c "curl -s -u '$MAIL_AUTH' '$MAIL/api/v1/messages' | grep -q 'FIRING:1\] WebReplicaDown (prod)'"
+check "the email links its dashboard through the admin gateway" sh -c "curl -s -u '$MAIL_AUTH' '$MAIL/api/v1/message/latest' | grep -q '$(tfout prod admin_url)/grafana/d/'"
 info "alert email received $(( $(date +%s) - t0 )) s after the replica stopped"
 docker start bugtracker-prod-web-2 >/dev/null
-check "when it comes back, the resolved email arrives" wait_for 150 sh -c "curl -s '$MAIL/api/v1/messages' | grep -q 'RESOLVED\] WebReplicaDown (prod)'"
+check "when it comes back, the resolved email arrives" wait_for 150 sh -c "curl -s -u '$MAIL_AUTH' '$MAIL/api/v1/messages' | grep -q 'RESOLVED\] WebReplicaDown (prod)'"
 info "mailbox: $(mails)"
 sent=$(docker exec bugtracker-prod-alertmanager wget -qO- http://127.0.0.1:9093/metrics | awk '/^alertmanager_notifications_total/ && /integration="telegram"/ {s+=$2} END {print s+0}')
 failed=$(docker exec bugtracker-prod-alertmanager wget -qO- http://127.0.0.1:9093/metrics | awk '/^alertmanager_notifications_failed_total/ && /integration="telegram"/ {s+=$2} END {print s+0}')
