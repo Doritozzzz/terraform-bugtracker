@@ -279,12 +279,12 @@ main { padding-bottom: var(--space-12); }
 /* Feed */
 .feed { margin-top: var(--space-3); }
 .feed-item {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  padding: 0.7rem 1.25rem; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+  padding: var(--space-3) var(--space-4); border-top: var(--line) solid var(--border);
 }
 .feed-main { min-width: 0; }
 .feed-main .row-link { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-.feed-empty { padding: 0.75rem 1.25rem 1.25rem; }
+.feed-empty { padding: var(--space-4); }
 
 /* Query & Services Status Panel in Incidents */
 /* One row: the services on the left, the last query on the right. */
@@ -404,12 +404,12 @@ main { padding-bottom: var(--space-12); }
 .svc-logs { display: inline-block; margin-top: var(--space-2); }
 
 /* Monitoring links */
-.monitoring-links { display: grid; gap: 0.75rem; }
-.monitoring-links li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; }
+.monitoring-links { display: grid; gap: var(--space-3); }
+.monitoring-links li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3); }
 .monitoring-links a { font-weight: var(--weight-medium); }
 
 /* Facts */
-.facts { display: grid; grid-template-columns: auto 1fr; gap: 0.65rem 1.5rem; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: var(--space-3) var(--space-6); }
 .facts dt { color: var(--muted); }
 .facts dd { margin: 0; text-align: right; font-weight: var(--weight-medium); font-variant-numeric: tabular-nums; }
 dl.facts.plain dd { text-align: left; }
@@ -417,14 +417,14 @@ dl.facts.plain dd { text-align: left; }
 /* Logs */
 .log { margin-top: var(--space-3); }
 .log li {
-  display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.6rem 1.25rem; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4); border-top: var(--line) solid var(--border);
 }
-.log .ms { margin-left: auto; color: var(--muted); }
+.log .ms { margin-left: auto; color: var(--muted); text-align: right; }
 .log .mono { color: var(--muted); font-size: var(--text-sm); }
 .log .event-text { flex: 1; }
 
-.empty { padding: 1.5rem 1.25rem; color: var(--muted); text-align: center; }
+.empty { padding: var(--space-6) var(--space-4); color: var(--muted); }
 
 /* ------------------------------------------------------------ small pieces */
 .dot { flex: none; display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 50%; }
@@ -510,29 +510,31 @@ a.tag:hover { border-color: color-mix(in srgb, var(--c, var(--faint)) 55%, trans
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th {
-  padding: 0.6rem 1rem; background: var(--surface-2); border-bottom: 1px solid var(--border);
+  padding: var(--space-3) var(--space-4); border-bottom: var(--line) solid var(--border);
   color: var(--muted); font-size: var(--text-xs); line-height: var(--leading-xs); font-weight: var(--weight-medium); text-align: left; white-space: nowrap;
 }
 th button { display: inline-flex; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 th button:hover, th[aria-sort='ascending'] button, th[aria-sort='descending'] button { color: var(--text); }
-td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+td { padding: var(--space-2) var(--space-4); border-bottom: var(--line) solid var(--border); vertical-align: middle; }
+/* The ID column hugs its content; the incident title takes the rest. */
+th[data-col='id'] { width: 1%; }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr[data-id] { cursor: pointer; }
 tbody tr[data-id]:hover { background: var(--surface-2); }
 .cell-sub { color: var(--muted); font-family: var(--mono); font-size: var(--text-sm); line-height: var(--leading-sm); }
 td.muted-cell { color: var(--muted); white-space: nowrap; }
 td.id-cell { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
-.table-foot { padding: 0.7rem 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: var(--text-sm); line-height: var(--leading-sm); }
+.table-foot { padding: var(--space-3) var(--space-4); border-top: var(--line) solid var(--border); color: var(--muted); font-size: var(--text-sm); line-height: var(--leading-sm); }
 
 .row-new { animation: flash 2.5s ease-out; }
 @keyframes flash { from { background: color-mix(in srgb, var(--accent) 20%, transparent); } to { background: transparent; } }
 
 /* Loading skeletons: shimmer only while the first load is pending. */
-.sk-line { display: block; height: 1rem; width: 70%; border-radius: 6px; background: var(--surface-2); }
-.sk-block { height: 8rem; border-radius: 8px; background: var(--surface-2); }
+.sk-line { display: block; height: var(--space-4); width: 70%; border-radius: var(--radius-sm); background: var(--surface-2); }
+.sk-block { height: 8rem; border-radius: var(--radius-md); background: var(--surface-2); }
 body[data-loading] .sk {
   color: transparent !important;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
@@ -609,6 +611,21 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(2px); }
   .donut-wrap { gap: 1rem; }
   .lb-row { grid-template-columns: 1fr 5rem 2.5rem; }
   .lb-row .bar-label { overflow: hidden; text-overflow: ellipsis; }
+
+  /* Narrow screens: each incident becomes a block (title and system on top,
+     the rest on one line below) instead of five squeezed columns. The header
+     stays as a row of sort buttons. */
+  .table-wrap table, .table-wrap tbody { display: block; }
+  .table-wrap thead tr { display: flex; flex-wrap: wrap; border-bottom: var(--line) solid var(--border); }
+  .table-wrap th { border: 0; width: auto; }
+  .table-wrap tbody tr {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3);
+    padding: var(--space-3) var(--space-4); border-bottom: var(--line) solid var(--border);
+  }
+  .table-wrap tbody tr:last-child { border-bottom: 0; }
+  .table-wrap td { padding: 0; border: 0; }
+  .table-wrap td:nth-child(2), .table-wrap td:only-child { order: -1; flex-basis: 100%; }
+  .table-wrap td:last-child:not(:only-child) { margin-left: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
