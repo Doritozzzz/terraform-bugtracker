@@ -118,6 +118,7 @@ module "web" {
     STORAGE_HEALTH_URL = "http://${module.storage.backend}${module.storage.health_path}"
     # Links shown in the System view, through the admin gateway; the app never calls them.
     GRAFANA_URL      = "${local.admin_url}/grafana"
+    PROMETHEUS_URL   = module.metrics_store.url
     ALERTMANAGER_URL = module.alert_manager.url
     MAIL_URL         = module.mail_catcher.url
   }
