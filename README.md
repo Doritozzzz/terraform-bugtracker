@@ -331,6 +331,7 @@ persistence, logs and metrics per environment, and an alert from firing to resol
 | `make recreate-db` | Replace the database container to show the data survives |
 | `make kill-web` / `start-web` | Stop / start web replica 2 (in prod it fires an alert) |
 | `make kill-db` / `start-db`, `kill-cache` / `start-cache`, `kill-storage` / `start-storage` | Simulate failures and recoveries |
+| `make kill NAME=…` / `make revive NAME=…` | Stop / start any container of an environment, e.g. `NAME=prometheus` or `NAME=web-3` (without NAME, it lists them) |
 | `make test-db` / `make test-cache` | Check PostgreSQL / Redis directly |
 | `make test` / `make test-alerts` | End-to-end suite / alert rule tests |
 | `make demo` | Guided 10-minute demonstration; step 1 destroys and deploys everything live |
@@ -348,14 +349,18 @@ Sixteen steps for a 10-minute talk, one ENTER each. Every screen has a one-line 
 why not the alternatives) and `CODE` (the file and line, found when the step runs, so it is never out of date).
 The header shows the elapsed time against the target of each step.
 
-**Step 1 always destroys dev and prod and deploys them again from nothing**, in the background, while steps 2-5
-explain the design. Run it live, or before the talk:
+**Step 1 always destroys dev and prod and deploys them again from nothing** (`terraform destroy` of each, then
+`make up-all`), in the background, while steps 2-5 explain the design. A second terminal window
+([scripts/deploy-watch.sh](scripts/deploy-watch.sh)) shows one progress bar per phase: destroy dev, destroy prod,
+deploy dev, deploy prod. Run it live, or before the talk:
 
 ```bash
 make demo          # every step, step 1 live
-make demo-deploy   # only step 1, waiting until both environments are up
-make demo-talk     # then, at the talk, from step 2
+make demo-deploy   # only step 1, with the progress bars, waiting until both environments are up
+make demo-talk     # then, at the talk: the URLs and passwords first, then from step 2
 ```
+
+The commands each step runs are printed exactly as they run, so they can be copied into another terminal.
 
 1. **Deploy everything from nothing** (`terraform destroy` + `make up-all`, in the background).
 2. **Architecture:** opens [docs/images/architecture.svg](docs/images/architecture.svg).

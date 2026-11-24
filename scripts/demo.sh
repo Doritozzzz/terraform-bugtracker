@@ -75,6 +75,13 @@ code() {
 # run "command": shows what the step runs; the step prints its result after it.
 run() { label RUN "$DIM\$ $1$RESET"; }
 
+# show "command": prints the command and runs exactly that text, so it can be
+# copied into any terminal; its output is indented under it.
+show() {
+  label RUN "$DIM\$ $1$RESET"
+  eval "$1" 2>&1 | tr -d '\r' | sed 's/^/          /'
+}
+
 clock() { printf '%02d:%02d' $(($1 / 60)) $(($1 % 60)); }
 
 # step N "title" TARGET_SECONDS
@@ -128,14 +135,6 @@ wait_for() {
   done
 }
 
-# n requests to the app, counted by the replica that served each one.
-served_by() {
-  local app
-  app=$(tfout prod app_url)
-  for _ in $(seq "$1"); do curl -s -D - -o /dev/null -m 2 "$app/live" | tr -d '\r' | awk -F': ' 'tolower($1) == "x-served-by" {print $2}'; done |
-    sort | uniq -c | awk '{printf "%s %s   ", $2, $1}' | sed 's/bugtracker-prod-//g'
-}
-
 # The deploy runs in the background, so its state lives in files (ignored by git).
 RUNDIR=.demo
 deploy_running() { [ -f "$RUNDIR/deploy.pid" ] && kill -0 "$(cat "$RUNDIR/deploy.pid")" 2>/dev/null; }
@@ -148,6 +147,20 @@ deploy_line() {
   else
     echo
   fi
+}
+
+# Opens scripts/deploy-watch.sh (progress bars of the deploy) in a new terminal
+# window, with the first terminal emulator found.
+open_watcher() {
+  local watch=(bash scripts/deploy-watch.sh)
+  if command -v kitty >/dev/null; then kitty --title "Deploy" --directory "$PWD" "${watch[@]}"
+  elif command -v ptyxis >/dev/null; then ptyxis --new-window -d "$PWD" -- "${watch[@]}"
+  elif command -v gnome-terminal >/dev/null; then gnome-terminal --working-directory="$PWD" -- "${watch[@]}"
+  elif command -v konsole >/dev/null; then konsole --workdir "$PWD" -e "${watch[@]}"
+  elif command -v xterm >/dev/null; then xterm -e "${watch[@]}"
+  else return 1
+  fi >/dev/null 2>&1 &
+  disown 2>/dev/null
 }
 
 deploy_result() {
@@ -222,6 +235,7 @@ MAP=(
   "Terraform|One root per environment|environments/prod/main.tf|module \"web\""
   "Terraform|Settings per environment|environments/prod/terraform.tfvars|web_replicas"
   "Terraform|Makefile: deploy both|Makefile|^up-all:"
+  "Terraform|Makefile: stop any container|Makefile|^kill:"
   "Terraform|End-to-end tests|scripts/test.sh|^section \"1"
 )
 
@@ -266,31 +280,49 @@ TARGETS=(0 20 80 120 150 195 240 270 320 350 375 400 450 495 530 555 590)
 TOTAL=$((${#TITLES[@]} - 1))
 
 step_1() {
-  headline "Everything starts from nothing: one command deploys dev and prod side by side, from code."
-  run "terraform destroy (dev, prod)  &&  make up-all"
+  headline "Everything starts from nothing: dev and prod are destroyed and deployed again, side by side, from code."
+  label RUN "$DIM\$ terraform -chdir=environments/dev destroy -auto-approve$RESET" \
+    "$DIM\$ terraform -chdir=environments/prod destroy -auto-approve$RESET" \
+    "$DIM\$ make up-all$RESET"
+  kv "up-all" "make up ENV=dev, then make up ENV=prod"
+  kv "up" "terraform plan -out=tfplan, then terraform apply tfplan"
   kv "before" "$(count dev) dev and $(count prod) prod containers running"
   rm -f "$RUNDIR/deploy.done"
   date +%s >"$RUNDIR/deploy.start"
+  # The same commands, one "### phase" marker each so deploy-watch.sh can draw
+  # one progress bar per phase. No colours in the log, which it parses.
   (
+    export TF_CLI_ARGS=-no-color
     start=$(date +%s)
-    for e in dev prod; do terraform -chdir="environments/$e" destroy -auto-approve -input=false; done
-    make --no-print-directory up-all
-    echo "$? $(($(date +%s) - start))" >"$RUNDIR/deploy.done"
+    rc=0
+    for e in dev prod; do
+      echo "### destroy $e"
+      terraform -chdir="environments/$e" destroy -auto-approve -input=false || rc=1
+    done
+    for e in dev prod; do
+      echo "### deploy $e"
+      make --no-print-directory up ENV="$e" || rc=1
+    done
+    echo "$rc $(($(date +%s) - start))" >"$RUNDIR/deploy.done"
   ) >"$RUNDIR/deploy.log" 2>&1 &
   echo $! >"$RUNDIR/deploy.pid"
-  kv "now" "destroying and deploying in the background (about 4 minutes)"
-  why "Infrastructure as code: one command rebuilds both, on any machine." \
+  if [ "$TO" = 1 ]; then
+    # Only step 1 (before the talk): the progress bars right here.
+    kv "progress" "below; it takes about 3 minutes"
+    echo
+    WATCH_INLINE=1 bash scripts/deploy-watch.sh
+    echo
+    deploy_result
+    return
+  fi
+  if open_watcher; then
+    kv "progress" "in the window that just opened (scripts/deploy-watch.sh)"
+  else
+    kv "progress" "run bash scripts/deploy-watch.sh in another terminal"
+  fi
+  why "Infrastructure as code: the same commands rebuild both, on any machine." \
     "Names start with bugtracker-<env>: dev and prod never collide."
   code Makefile '^up-all:'
-  if [ "$TO" = 1 ]; then
-    echo
-    while deploy_running; do
-      printf '\r          %sdeploy running %s · dev %s · prod %s containers up%s ' "$DIM" "$(clock "$(deploy_since)")" "$(count dev)" "$(count prod)" "$RESET"
-      sleep 3
-    done
-    printf '\n'
-    deploy_result
-  fi
 }
 
 step_2() {
@@ -336,7 +368,9 @@ step_4() {
 
 step_5() {
   headline "HAProxy shares the requests between the replicas and takes out the ones that fail."
-  why "static-rr: strict turns. Our requests are short and similar, so they" \
+  why "HAProxy, not nginx: active health checks and Prometheus metrics come" \
+    "  free; in nginx active checks are NGINX Plus only (paid)." \
+    "static-rr: strict turns. Our requests are short and similar, so they" \
     "  spread evenly; a recovered replica is back in the turn at once." \
     "roundrobin: measured uneven (13/7)." \
     "leastconn: for long connections; ours last milliseconds." \
@@ -354,33 +388,39 @@ step_6() {
     while deploy_running; do sleep 3; done
   fi
   [ -f "$RUNDIR/deploy.done" ] && deploy_result
-  run "terraform plan (prod)"
+  run "terraform -chdir=environments/prod plan -detailed-exitcode"
   if terraform -chdir=environments/prod plan -detailed-exitcode -input=false >/dev/null 2>&1; then
     ok "No changes: what runs is what the code says."
   else
     bad "prod differs from its code"
   fi
   echo
+  access_open
+}
+
+# The access table, and the app and admin gateway opened in the browser.
+access_open() {
   access
   echo
   xdg-open "$(tfout prod app_url)/#/system" >/dev/null 2>&1 &
   xdg-open "$(tfout prod admin_url)" >/dev/null 2>&1 &
-  open "The app (System tab) and the admin gateway, opened in the browser"
+  open "The app (System tab) and the admin gateway, opened in the browser." \
+    "Also at any time: bash scripts/demo.sh --access"
 }
 
 step_7() {
   headline "Each page shows the replica that served it. The requests go in turns."
-  run "30 requests to the app, counted by replica"
-  kv "served by" "$(served_by 30)"
+  show "for i in \$(seq 30); do curl -s -D - -o /dev/null $(tfout prod app_url)/live | grep -i x-served-by; done | sort | uniq -c"
   open "App > System: replica badge (top left), colours of Load balancing"
   code modules/load-balancer/haproxy.cfg.tftpl 'X-Served-By'
 }
 
 step_8() {
   headline "Scaling out is one number. HAProxy and Prometheus reload their config: nothing is replaced."
-  run "terraform apply -var web_replicas=5   (prod, with traffic)"
+  run "terraform -chdir=environments/prod apply -auto-approve -var web_replicas=5"
   local app lb0 good total codes traffic
   app=$(tfout prod app_url)
+  kv "meanwhile" "curl $app/live every 0.1 s, counting the answers"
   lb0=$(started bugtracker-prod-lb)
   codes=$(mktemp)
   (while :; do curl -s -o /dev/null -m 2 -w '%{http_code}\n' "$app/live"; sleep 0.1; done) >"$codes" &
@@ -417,39 +457,33 @@ step_10() {
   headline "prod caches the incident list in Redis. Images come straight from the MinIO bucket."
   local app
   app=$(tfout prod app_url)
-  run "GET /api/incidents twice"
-  for _ in 1 2; do kv "X-Cache" "$(curl -s -D - -o /dev/null "$app/api/incidents" | tr -d '\r' | awk -F': ' 'tolower($1) == "x-cache" {print $2}')"; done
-  run "GET /images/high.png, then list the bucket"
-  kv "a picture" "$(curl -s -o /dev/null -w '%{http_code}' "$app/images/high.png")"
-  kv "the list" "$(curl -s -o /dev/null -w '%{http_code}' "$app/images/")"
+  show "for i in 1 2; do curl -s -D - -o /dev/null $app/api/incidents | grep -i x-cache; done"
+  show "for u in images/high.png images/; do curl -s -o /dev/null -w \"%{http_code}  /\$u\\n\" $app/\$u; done"
   why "Cache-aside: Redis, else PostgreSQL; kept 60 s, cleared on a write." \
     "/images/ goes from the LB to the bucket: a CDN in front of S3." \
-    "Bucket policy: download only, so it cannot be listed."
+    "Bucket policy: download only, so it cannot be listed (403)."
   code modules/cache/main.tf 'allkeys-lru'
   code modules/object-storage/init.sh 'mb --ignore-existing'
 }
 
 step_11() {
   headline "One replica goes down. Users notice nothing: the load balancer stops sending it traffic."
-  run "make kill-web ENV=prod   (docker stop bugtracker-prod-web-2)"
-  docker stop bugtracker-prod-web-2 >/dev/null
+  show "make kill-web ENV=prod"
   REPLICA_DOWN=1
   T_DOWN=$SECONDS
   sleep 3
-  local app good=0
-  app=$(tfout prod app_url)
-  for _ in $(seq 20); do [ "$(curl -s -o /dev/null -m 3 -w '%{http_code}' "$app/api/incidents")" = 200 ] && good=$((good + 1)); done
-  kv "requests" "$good of 20 answered 200"
+  show "for i in \$(seq 20); do curl -s -o /dev/null -w '%{http_code} ' $(tfout prod app_url)/api/incidents; done; echo"
   why "docker stop is a manual stop: Docker leaves it down, the alert fires." \
-    "A crash would be restarted by Docker in under 2 seconds."
+    "A crash would be restarted by Docker in under 2 seconds." \
+    "Any container can be stopped: make kill NAME=prometheus ENV=prod"
   code modules/load-balancer/haproxy.cfg.tftpl 'default-server check'
 }
 
 step_12() {
   headline "Prometheus reads every service every 15 s. Grafana draws it; an alert is a query with a threshold."
-  run "$UP_QUERY"
+  label RUN "PromQL: $UP_QUERY"
   wait_for 30 replicas_up_is 2
-  kv "replicas up" "$(promq "$UP_QUERY")"
+  kv "result" "$(promq "$UP_QUERY") replicas up"
   open "Grafana > Bugtracker status: 2 web replicas, CPU and memory" \
     "Prometheus > Query: paste the query above"
   code monitoring/alerts/bugtracker.rules.yml 'alert: WebCapacityLow'
@@ -457,24 +491,27 @@ step_12() {
 
 step_13() {
   headline "The alert fires after 30 s and reaches the team by email and Telegram."
-  run "wait for the alert email"
+  local mail
+  mail=$(tfout prod mail_url | sed 's|/$||')
+  run "curl -s -u admin:$(tfout prod admin_password) $mail/api/v1/messages"
   if wait_for 150 mail_has 'FIRING:1. WebReplicaDown'; then
-    kv "email" "$(mail_subjects | grep -m 1 'FIRING')"
+    kv "subject" "$(mail_subjects | grep -m 1 'FIRING')"
     kv "after" "$((SECONDS - T_DOWN)) s"
   else
     bad "no alert email within 150 s"
   fi
   open "Mailpit (admin gateway > mail) and Telegram on the phone"
   why "for: 30s, so a restart of a few seconds wakes nobody." \
-    "Prometheus detects; Alertmanager groups, notifies, and says when it is resolved."
+    "Prometheus detects; Alertmanager groups, notifies, says when resolved."
   code monitoring/alerts/bugtracker.rules.yml 'alert: WebReplicaDown'
 }
 
 step_14() {
   headline "Every request gets an ID. The logs of every container are in one place, searchable."
-  run "GET /api/incidents, read its X-Request-ID"
-  local id
-  id=$(curl -s -D - -o /dev/null "$(tfout prod app_url)/api/incidents" | tr -d '\r' | awk -F': ' 'tolower($1) == "x-request-id" {print $2}')
+  local cmd id
+  cmd="curl -s -D - -o /dev/null $(tfout prod app_url)/api/incidents | grep -i x-request-id"
+  label RUN "$DIM\$ $cmd$RESET"
+  id=$(eval "$cmd" | tr -d '\r' | awk -F': ' '{print $2}')
   kv "request ID" "$id"
   command -v wl-copy >/dev/null && printf '%s' "$id" | wl-copy 2>/dev/null && kv "" "(copied to the clipboard)"
   open "Grafana > Bugtracker logs: paste it in Search." \
@@ -486,26 +523,22 @@ step_14() {
 
 step_15() {
   headline "The replica comes back and the load balancer puts it in the rotation by itself."
-  run "make start-web ENV=prod"
-  docker start bugtracker-prod-web-2 >/dev/null
+  show "make start-web ENV=prod"
   REPLICA_DOWN=0
-  if wait_for 60 healthy bugtracker-prod-web-2; then kv "web-2" "healthy"; else bad "web-2 is not healthy"; fi
+  if wait_for 60 healthy bugtracker-prod-web-2; then ok "web-2 healthy"; else bad "web-2 is not healthy"; fi
   sleep 3
-  kv "served by" "$(served_by 30)"
+  show "for i in \$(seq 30); do curl -s -D - -o /dev/null $(tfout prod app_url)/live | grep -i x-served-by; done | sort | uniq -c"
   open "App > System: three colours again." \
     "The RESOLVED email and Telegram message follow in about a minute."
 }
 
 step_16() {
   headline "Only two ports, both on this machine. Every admin tool is behind the gateway's login."
-  run "published ports of prod"
-  kv "ports" "$(docker ps --filter label=environment=prod --format '{{.Ports}}' | tr ',' '\n' | grep -o '127.0.0.1:[0-9]*' | sort -u | paste -sd' ')"
   local admin
   admin=$(tfout prod admin_url)
-  run "the admin gateway, without and with its login"
-  kv "no login" "$(curl -s -o /dev/null -w '%{http_code}' "$admin/prometheus/")"
-  kv "login" "$(curl -s -o /dev/null -w '%{http_code}' -u "admin:$(tfout prod admin_password)" "$admin/prometheus/-/ready")"
-  run "alert emails"
+  show "docker ps --filter label=environment=prod --format '{{.Names}}  {{.Ports}}' | grep 127.0.0.1"
+  show "curl -s -o /dev/null -w '%{http_code}\\n' $admin/prometheus/"
+  show "curl -s -o /dev/null -w '%{http_code}\\n' -u admin:$(tfout prod admin_password) $admin/prometheus/-/ready"
   kv "mailbox" "$(mail_subjects | paste -sd'|' | sed 's/|/  |  /g')"
   why "admin network: the management plane; no tool has a port of its own." \
     "No root users, read-only filesystems, no capabilities; secrets never in Git."
@@ -532,9 +565,21 @@ trap 'exit 130' INT TERM
 START=$SECONDS
 T_DOWN=$SECONDS
 [ "$TO" -gt "$TOTAL" ] && TO=$TOTAL
+
+# Started after step 1 (make demo-talk): everything is already deployed, so
+# the passwords and the browser tabs come first instead of waiting for step 6.
+if [ "$FROM" -gt 1 ] && [ "$FROM" -le 6 ] && ! deploy_running; then
+  printf '\n %sBEFORE WE START  Access%s\n' "$BOLD" "$RESET"
+  rule
+  echo
+  access_open
+  gate
+fi
+
 for i in $(seq "$FROM" "$TO"); do
   step "$i" "${TITLES[$i]}" "${TARGETS[$i]}"
   "step_$i"
-  gate
+  # make demo-deploy (step 1 only) just ends when both environments are up.
+  if [ "$TO" = 1 ]; then rule; else gate; fi
 done
 printf '\n %sDemo finished in %s.%s\n' "$DIM" "$(clock $((SECONDS - START)))" "$RESET"
