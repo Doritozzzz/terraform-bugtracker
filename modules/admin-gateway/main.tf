@@ -44,9 +44,6 @@ resource "local_file" "index" {
     routes      = var.routes
     # One section per group, in the order the routes first use it.
     groups = distinct([for r in var.routes : r.group])
-    # Colors of the initial shown when a route has no icon, taken in turn so
-    # neighbouring cards differ.
-    colors = ["#f46800", "#e6522c", "#7c3aed", "#0ea5e9", "#c72e49", "#16a34a"]
   })
 
   file_permission      = "0644"

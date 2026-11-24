@@ -28,8 +28,7 @@
   ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
   a { display: flex; gap: 14px; height: 100%; box-sizing: border-box; padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: inherit; text-decoration: none; box-shadow: 0 1px 2px rgb(16 24 40 / .04); transition: border-color .15s, box-shadow .15s, transform .15s; }
   a:hover, a:focus-visible { border-color: var(--border-hover); box-shadow: 0 6px 16px rgb(16 24 40 / .08); transform: translateY(-1px); outline: none; }
-  .icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; color: #fff; font-weight: 700; font-size: 17px; text-transform: uppercase; }
-  .icon.logo { background: var(--bg); border: 1px solid var(--border); box-sizing: border-box; }
+  .icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; box-sizing: border-box; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); font-weight: 600; font-size: 17px; text-transform: uppercase; }
   .icon img { width: 24px; height: 24px; }
   strong { display: block; font-size: 15px; font-weight: 600; text-transform: capitalize; }
   a:hover strong { color: var(--accent); }
@@ -53,13 +52,13 @@
   <h2>${g}</h2>
 %{ endif ~}
   <ul>
-%{ for i, r in routes ~}
+%{ for r in routes ~}
 %{ if r.group == g ~}
     <li><a href="${r.path_prefix}">
 %{ if r.icon != null ~}
-      <span class="icon logo"><img src="${r.icon}" alt=""></span>
+      <span class="icon"><img src="${r.icon}" alt=""></span>
 %{ else ~}
-      <span class="icon" style="background:${colors[i % length(colors)]}">${substr(r.name, 0, 1)}</span>
+      <span class="icon">${substr(r.name, 0, 1)}</span>
 %{ endif ~}
       <span><strong>${r.name}</strong>%{ if r.description != null }<span class="desc">${r.description}</span>%{ endif }<code>${r.path_prefix}</code></span>
     </a></li>

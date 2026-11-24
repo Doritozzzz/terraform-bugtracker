@@ -14,7 +14,7 @@ variable "networks" {
 }
 
 variable "routes" {
-  description = "One admin tool per path prefix, shown on the index page as a card with its optional description and icon (a URL, usually the tool's own logo under its prefix; without it, a coloured initial), under its optional group heading. strip_prefix removes the prefix before forwarding, for tools that know their public path but serve from /; set it to false for tools that serve under the prefix themselves."
+  description = "One admin tool per path prefix, shown on the index page as a card with its optional description and icon (a URL, usually the tool's own logo under its prefix; without it, its initial), under its optional group heading. strip_prefix removes the prefix before forwarding, for tools that know their public path but serve from /; set it to false for tools that serve under the prefix themselves."
   type = list(object({
     name         = string
     path_prefix  = string
