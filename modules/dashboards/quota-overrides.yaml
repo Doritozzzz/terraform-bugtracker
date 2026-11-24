@@ -1,0 +1,3 @@
+# No per-tenant quota overrides: Grafana uses its default limits. The file
+# only has to exist (grafana/grafana#136271, see main.tf).
+overrides: {}

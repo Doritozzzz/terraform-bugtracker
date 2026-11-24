@@ -104,11 +104,25 @@ resource "docker_container" "grafana" {
     # On by default but deprecated: browsers removed the X-XSS-Protection
     # header, and Grafana itself recommends turning it off.
     "GF_SECURITY_X_XSS_PROTECTION=false",
+    # On by default since Grafana 13, and it logs a warning for every 304 (a
+    # file the browser already has): about a hundred each time Grafana is
+    # opened. Compression is the job of a proxy in front, if one is needed.
+    "GF_SERVER_ENABLE_GZIP=false",
+    # Grafana 13.3 answers 501, logged as an error, when the dashboards page
+    # asks for quota usage and no overrides file is set (grafana/grafana#136271).
+    # With an empty one it answers with its default limits.
+    "GF_UNIFIED_STORAGE_OVERRIDES_PATH=/etc/grafana/quota-overrides.yaml",
   ], var.home_dashboard == null ? [] : ["GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/dashboards/${var.home_dashboard}"], var.root_url == null ? [] : ["GF_SERVER_ROOT_URL=${var.root_url}"])
 
   volumes {
     host_path      = local_file.datasources.filename
     container_path = "/etc/grafana/provisioning/datasources/datasources.yaml"
+    read_only      = true
+  }
+
+  volumes {
+    host_path      = abspath("${path.module}/quota-overrides.yaml")
+    container_path = "/etc/grafana/quota-overrides.yaml"
     read_only      = true
   }
 
