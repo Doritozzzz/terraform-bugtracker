@@ -15,6 +15,7 @@
   --ok: #16a34a;
   --err: #dc2626;
   --warn: #d97706;
+  --yellow: #eab308;
   --info: #0070f3;
   --violet: #7928ca;
   --cyan: #0891b2;
@@ -43,6 +44,7 @@
   --ok: #3ecf6e;
   --err: #f2555a;
   --warn: #f5a524;
+  --yellow: #facc15;
   --info: #4c9aff;
   --violet: #a78bfa;
   --cyan: #22d3ee;
@@ -52,15 +54,18 @@
   --shadow: none;
 }
 
-/* Semantic color helper: anything with a c-* class exposes --c. */
-.c-low, .c-neutral { --c: var(--neutral); }
-.c-medium, .c-info { --c: var(--info); }
+/* Semantic color helper: anything with a c-* class exposes --c.
+   Priorities follow the colours of their pictures in images/. */
+.c-low, .c-ok { --c: var(--ok); }
+.c-medium { --c: var(--yellow); }
+.c-neutral { --c: var(--neutral); }
+.c-info { --c: var(--info); }
 .c-high, .c-warn { --c: var(--warn); }
 .c-critical, .c-err { --c: var(--err); }
 .c-open, .c-violet { --c: var(--violet); }
 .c-in_progress, .c-cyan { --c: var(--cyan); }
 .c-pink { --c: var(--pink); }
-.c-resolved, .c-ok { --c: var(--ok); }
+.c-resolved { --c: var(--ok); }
 
 /* -------------------------------------------------------------------- base */
 * { box-sizing: border-box; }
