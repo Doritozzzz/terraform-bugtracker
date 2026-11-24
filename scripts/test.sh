@@ -213,6 +213,23 @@ before=$(docker inspect -f '{{.RestartCount}}' bugtracker-prod-web-1)
 kill -9 "$pid" 2>/dev/null || docker exec bugtracker-prod-web-1 kill -TERM 1
 check "a crashed replica is restarted by Docker (restart policy)" \
   wait_for 30 sh -c "[ \$(docker inspect -f {{.RestartCount}} bugtracker-prod-web-1) -gt $before ]"
+
+# The load balancer and Prometheus load a new config with a reload signal
+# instead of being replaced, and the restart policy must survive it (docker
+# kill --signal would disable it). Replacing the reload step runs it again
+# without changing anything; then each container is crashed like the replica.
+lb_start=$(docker inspect -f '{{.State.StartedAt}}' bugtracker-prod-lb)
+check "the load balancer and Prometheus reload their config" \
+  terraform -chdir=environments/prod apply -auto-approve -input=false \
+  -replace=module.load_balancer.terraform_data.reload -replace=module.metrics_store.terraform_data.reload
+expect "the reload does not replace the load balancer" "$lb_start" "$(docker inspect -f '{{.State.StartedAt}}' bugtracker-prod-lb)"
+for c in bugtracker-prod-lb bugtracker-prod-prometheus; do
+  before=$(docker inspect -f '{{.RestartCount}}' "$c")
+  kill -9 "$(docker inspect -f '{{.State.Pid}}' "$c")" 2>/dev/null || docker exec "$c" kill -TERM 1
+  check "after a reload, a crashed ${c#bugtracker-prod-} is restarted by Docker" \
+    wait_for 30 sh -c "[ \$(docker inspect -f {{.RestartCount}} $c) -gt $before ]"
+done
+check "the web answers again through the load balancer" wait_for 30 sh -c "[ \"\$(curl -s -o /dev/null -m 5 -w '%{http_code}' '$PROD/live')\" = 200 ]"
 check "and is healthy again" wait_for 60 sh -c '[ "$(docker inspect -f {{.State.Health.Status}} bugtracker-prod-web-1)" = healthy ]'
 
 # ---------------------------------------------------------- 7. persistence
