@@ -149,44 +149,105 @@ deploy_line() {
   fi
 }
 
-# The default browser's command, from its .desktop file (e.g. "firefox").
+# ----------------------------------------------------- browser, terminal, clipboard
+# Conveniences only: each one does nothing when the tool it needs is missing,
+# and never stops the demo.
+
+# A graphical session to open windows in (Linux needs DISPLAY or WAYLAND_DISPLAY).
+has_gui() { [ "$(uname)" = Darwin ] || [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; }
+
+# detach command...: runs it apart from the demo, with no output.
+detach() {
+  if command -v setsid >/dev/null; then setsid "$@" >/dev/null 2>&1 &
+  else nohup "$@" >/dev/null 2>&1 &
+  fi
+}
+
+# The command of the default browser when it is a known one, so several URLs
+# can go in one call. Read from xdg-settings: Firefox (also Flatpak and Snap),
+# Chrome, Chromium, Brave, Edge or Vivaldi.
 browser_cmd() {
-  local d f
+  local d b
+  command -v xdg-settings >/dev/null || return 1
   d=$(xdg-settings get default-web-browser 2>/dev/null) || return 1
-  for f in "$HOME/.local/share/applications/$d" "/usr/share/applications/$d" "/var/lib/flatpak/exports/share/applications/$d"; do
-    [ -f "$f" ] && sed -n 's/^Exec=//p' "$f" | head -n 1 | sed 's/ %[uUfF]//g' && return 0
-  done
+  case $d in
+    *firefox*) set -- firefox firefox-esr ;;
+    *brave*) set -- brave-browser brave-browser-stable brave ;;
+    *chromium*) set -- chromium chromium-browser ;;
+    *chrome*) set -- google-chrome-stable google-chrome ;;
+    *edge*) set -- microsoft-edge-stable microsoft-edge ;;
+    *vivaldi*) set -- vivaldi-stable vivaldi ;;
+    *) return 1 ;;
+  esac
+  for b in "$@"; do command -v "$b" >/dev/null && echo "$b" && return 0; done
+  # Installed as a Flatpak: the desktop file name is the application ID.
+  command -v flatpak >/dev/null && flatpak info "${d%.desktop}" >/dev/null 2>&1 && echo "flatpak run ${d%.desktop}" && return 0
   return 1
 }
 
-# browse URL...: every URL in one call to the browser, so no tab gets lost
-# (several calls in a row can drop one). Without a known browser, xdg-open.
+# browse URL...: opens the URLs as tabs of the open browser window, in one
+# call so no tab gets lost (several calls in a row can drop one). An unknown
+# browser gets one xdg-open (or open, on macOS) per URL instead.
 browse() {
+  has_gui || return 0
   local cmd url args=()
-  if cmd=$(browser_cmd) && [ -n "$cmd" ]; then
+  if cmd=$(browser_cmd); then
     # Firefox opens a list of URLs in a new window unless each is a --new-tab.
     for url in "$@"; do
       case $cmd in *firefox*) args+=(--new-tab "$url") ;; *) args+=("$url") ;; esac
     done
-    # shellcheck disable=SC2086  # the command may hold arguments
-    setsid $cmd "${args[@]}" >/dev/null 2>&1 &
-  else
-    for url in "$@"; do setsid xdg-open "$url" >/dev/null 2>&1 & sleep 1.5; done
+    # shellcheck disable=SC2086  # "flatpak run <id>" holds arguments
+    detach $cmd "${args[@]}"
+  elif [ "$(uname)" = Darwin ]; then
+    detach open "$@"
+  elif command -v xdg-open >/dev/null; then
+    for url in "$@"; do detach xdg-open "$url"; sleep 1.5; done
   fi
+  return 0
 }
 
-# Opens scripts/deploy-watch.sh (progress bars of the deploy) in a new terminal
-# window, with the first terminal emulator found.
+# Opens scripts/deploy-watch.sh (progress bars of the deploy) in a new window:
+# the terminal the demo runs in if it is known, else the first one installed.
+# Returns 1 when none can be opened.
 open_watcher() {
-  local watch=(bash scripts/deploy-watch.sh)
-  if command -v kitty >/dev/null; then kitty --title "Deploy" --directory "$PWD" "${watch[@]}"
-  elif command -v ptyxis >/dev/null; then ptyxis --new-window -d "$PWD" -- "${watch[@]}"
-  elif command -v gnome-terminal >/dev/null; then gnome-terminal --working-directory="$PWD" -- "${watch[@]}"
-  elif command -v konsole >/dev/null; then konsole --workdir "$PWD" -e "${watch[@]}"
-  elif command -v xterm >/dev/null; then xterm -e "${watch[@]}"
+  has_gui || return 1
+  local run="cd '$PWD' && exec bash scripts/deploy-watch.sh" t
+  local -a order=()
+  [ -n "${KITTY_WINDOW_ID:-}" ] && order+=(kitty)
+  [ -n "${WEZTERM_PANE:-}" ] && order+=(wezterm)
+  [ -n "${ALACRITTY_WINDOW_ID:-}" ] && order+=(alacritty)
+  [ -n "${KONSOLE_VERSION:-}" ] && order+=(konsole)
+  [ -n "${GNOME_TERMINAL_SCREEN:-}" ] && order+=(gnome-terminal)
+  [ "${TERM_PROGRAM:-}" = Apple_Terminal ] && order+=(Terminal)
+  order+=(kitty ptyxis gnome-terminal konsole xfce4-terminal tilix alacritty foot wezterm x-terminal-emulator xterm Terminal)
+  for t in "${order[@]}"; do
+    case $t in
+      Terminal) [ "$(uname)" = Darwin ] || continue
+        detach osascript -e "tell application \"Terminal\" to do script \"$run\"" ;;
+      *) command -v "$t" >/dev/null || continue
+        case $t in
+          kitty) detach kitty --title Deploy bash -c "$run" ;;
+          ptyxis) detach ptyxis --new-window -- bash -c "$run" ;;
+          gnome-terminal) detach gnome-terminal -- bash -c "$run" ;;
+          wezterm) detach wezterm start -- bash -c "$run" ;;
+          xfce4-terminal | terminator) detach "$t" -x bash -c "$run" ;;
+          *) detach "$t" -e bash -c "$run" ;;
+        esac ;;
+    esac
+    return 0
+  done
+  return 1
+}
+
+# copy TEXT: to the clipboard, when a clipboard tool is installed.
+copy() {
+  has_gui || return 1
+  if command -v wl-copy >/dev/null && [ -n "${WAYLAND_DISPLAY:-}" ]; then printf '%s' "$1" | wl-copy
+  elif command -v xclip >/dev/null; then printf '%s' "$1" | xclip -selection clipboard
+  elif command -v xsel >/dev/null; then printf '%s' "$1" | xsel --clipboard --input
+  elif command -v pbcopy >/dev/null; then printf '%s' "$1" | pbcopy
   else return 1
-  fi >/dev/null 2>&1 &
-  disown 2>/dev/null
+  fi 2>/dev/null
 }
 
 deploy_result() {
@@ -551,7 +612,7 @@ step_14() {
   label RUN "$DIM\$ $cmd$RESET"
   id=$(eval "$cmd" | tr -d '\r' | awk -F': ' '{print $2}')
   kv "request ID" "$id"
-  command -v wl-copy >/dev/null && printf '%s' "$id" | wl-copy 2>/dev/null && kv "" "(copied to the clipboard)"
+  copy "$id" && kv "" "(copied to the clipboard)"
   open "Grafana > Bugtracker logs: paste it in Search." \
     "The line says which replica served it and how long it took."
   why "Alloy follows every container's logs and sends them to Loki;" \

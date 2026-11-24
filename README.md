@@ -361,6 +361,9 @@ make demo-talk     # then, at the talk: the URLs and passwords first, then from 
 ```
 
 The commands each step runs are printed exactly as they run, so they can be copied into another terminal.
+Opening the browser tabs (Firefox, Chrome, Chromium, Brave, Edge, Vivaldi, else `xdg-open`), the progress window
+(the terminal the demo runs in, else the first one installed) and copying to the clipboard are conveniences: when
+the tool is missing or there is no graphical session, the demo prints what to open instead and goes on.
 
 1. **Deploy everything from nothing** (`terraform destroy` + `make up-all`, in the background).
 2. **Architecture:** opens [docs/images/architecture.svg](docs/images/architecture.svg).
