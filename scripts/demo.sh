@@ -384,7 +384,12 @@ step_1() {
     rc=0
     for e in dev prod; do
       echo "### destroy $e"
-      terraform -chdir="environments/$e" destroy -auto-approve -input=false || rc=1
+      if [ -f "environments/$e/terraform.tfstate" ]; then
+        terraform -chdir="environments/$e" init -input=false &&
+          terraform -chdir="environments/$e" destroy -auto-approve -input=false || rc=1
+      else
+        echo "No changes. Nothing to destroy."
+      fi
     done
     for e in dev prod; do
       echo "### deploy $e"
@@ -482,11 +487,13 @@ step_6() {
     bad "prod differs from its code"
   fi
   echo
-  access_open
+  if [ "$ACCESS_OPENED" = 0 ]; then access_open; else access; fi
 }
 
 # The access table, and the app and admin gateway opened in the browser.
+ACCESS_OPENED=0
 access_open() {
+  ACCESS_OPENED=1
   access
   echo
   # The first tabs carry the gateway login in their URL, so they open logged
@@ -556,6 +563,8 @@ step_10() {
   headline "prod caches the incident list in Redis. Images come straight from the MinIO bucket."
   local app
   app=$(tfout prod app_url)
+  # Drop any entry warmed by the open browser so the first request is a MISS.
+  docker exec bugtracker-prod-cache sh -c 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h 127.0.0.1 del incidents' >/dev/null 2>&1 || true
   show "for i in 1 2; do curl -s -D - -o /dev/null $app/api/incidents | grep -i x-cache; done"
   show "for u in images/high.png images/; do curl -s -o /dev/null -w \"%{http_code}  /\$u\\n\" $app/\$u; done"
   why "Cache-aside: Redis, else PostgreSQL; kept 60 s, cleared on a write." \
@@ -567,6 +576,8 @@ step_10() {
 
 step_11() {
   headline "One replica goes down. Users notice nothing: the load balancer stops sending it traffic."
+  # Clear any older emails (e.g. from make test) so step 13 waits for this alert.
+  curl -s -u "admin:$(tfout prod admin_password)" -X DELETE "$(tfout prod mail_url | sed 's|/$||')/api/v1/messages" >/dev/null 2>&1 || true
   show "make kill-web ENV=prod"
   REPLICA_DOWN=1
   T_DOWN=$SECONDS

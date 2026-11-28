@@ -98,7 +98,7 @@ count_ok() {
 section "1. Code checks (no containers needed)"
 check "terraform fmt: every file is formatted" terraform fmt -check -recursive
 for env in dev prod; do
-  check "terraform validate ($env)" terraform -chdir="environments/$env" validate -no-color
+  check "terraform validate ($env)" sh -c "terraform -chdir='environments/$env' init -input=false >/dev/null && terraform -chdir='environments/$env' validate -no-color"
 done
 check "alerting rules are valid and their unit tests pass (promtool)" mk test-alerts
 # Only meaningful in a git checkout; the submission zip has no history.
