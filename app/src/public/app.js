@@ -722,7 +722,7 @@ function applyStatus(status, roundTrip) {
 
   const badge = $('#env-badge');
   badge.textContent = status.environment === 'production' ? 'Production' : 'Development';
-  badge.className = `tag hide-sm c-${status.environment === 'production' ? 'violet' : 'info'}`;
+  badge.className = 'tag hide-sm';
   $('#d-env').textContent = badge.textContent;
 
   // The links never change while the page is open: render them only once.
