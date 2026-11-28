@@ -2,8 +2,8 @@ locals {
   # Port inside the container.
   http_port = 9090
 
-  # Changes whenever a rule file changes, so the rules are reloaded too.
-  rules_hash = var.rules_dir == null ? null : sha1(join("", [for f in fileset(var.rules_dir, "*.rules.yml") : filesha1("${var.rules_dir}/${f}")]))
+  # Changes whenever a rule file is added, renamed or edited, so the rules are reloaded too.
+  rules_hash = var.rules_dir == null ? null : sha1(join("", [for f in fileset(var.rules_dir, "*.rules.yml") : "${f}:${filesha1("${var.rules_dir}/${f}")}"]))
 }
 
 resource "docker_image" "prometheus" {

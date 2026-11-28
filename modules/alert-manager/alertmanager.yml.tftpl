@@ -34,10 +34,10 @@ receivers:
         # Email only notifies resolved alerts if told to.
         send_resolved: true
         headers:
-          Subject: '{{ template "bugtracker.subject" . }}'
+          Subject: '{{ template "alert.subject" . }}'
         # Plain text, the same text as every other receiver.
         html: ""
-        text: '{{ template "bugtracker.text" . }}'
+        text: '{{ template "alert.text" . }}'
 %{ endif ~}
 %{ if telegram != null ~}
     # Resolved alerts are notified by default here.
@@ -46,5 +46,5 @@ receivers:
         chat_id: ${telegram.chat_id}
         # Plain text (the default, HTML, would need every < and & escaped).
         parse_mode: ""
-        message: '{{ template "bugtracker.subject" . }}{{ "\n\n" }}{{ template "bugtracker.text" . }}'
+        message: '{{ template "alert.subject" . }}{{ "\n\n" }}{{ template "alert.text" . }}'
 %{ endif ~}

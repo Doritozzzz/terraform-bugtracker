@@ -244,7 +244,7 @@ module "admin_gateway" {
       name        = "grafana"
       icon        = "/grafana/public/img/grafana_icon.svg"
       group       = "Observability"
-      description = "Dashboards of the app, the containers and the host."
+      description = "Dashboards of the app and the containers."
       path_prefix = "/grafana/"
       server      = module.dashboards.backend
     },

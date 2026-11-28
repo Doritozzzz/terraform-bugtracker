@@ -1,15 +1,17 @@
 {{/* Text of every notification: one block per alert, the same for every receiver. */}}
-{{ define "bugtracker.subject" -}}
+{{ define "alert.subject" -}}
 [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}{{ if .CommonLabels.environment }} ({{ .CommonLabels.environment }}){{ end }}
 {{- end }}
 
-{{ define "bugtracker.text" -}}
+{{ define "alert.text" -}}
 {{ range .Alerts -}}
 {{ if eq .Status "firing" }}FIRING{{ else }}RESOLVED{{ end }} [{{ .Labels.severity }}] {{ .Annotations.summary }}
 {{ .Annotations.description }}
+%{ if dashboard_url != null ~}
 {{- if .Annotations.dashboard }}
 Dashboard: ${dashboard_url}{{ .Annotations.dashboard }}
 {{- end }}
+%{ endif ~}
 Since: {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
 {{- if eq .Status "resolved" }}
 Resolved: {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}

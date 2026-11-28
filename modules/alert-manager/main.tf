@@ -25,15 +25,15 @@ resource "docker_volume" "data" {
 }
 
 # Rendered to files and bind-mounted read-only, like the load balancer config.
-resource "local_file" "config" {
+resource "local_sensitive_file" "config" {
   filename = abspath("${path.root}/.generated/${var.name}.yml")
   content = templatefile("${path.module}/alertmanager.yml.tftpl", {
     email    = var.email
     telegram = var.telegram
   })
 
-  # The provider default is 0777 (writable by anyone). It must stay readable by
-  # the nobody user of the container; with a Telegram receiver it holds the bot
+  # The provider default is 0700 (owner only). It must stay readable by the
+  # nobody user of the container; with a Telegram receiver it holds the bot
   # token, so it lives in the ignored .generated folder, like the state.
   file_permission      = "0644"
   directory_permission = "0755"
@@ -42,7 +42,7 @@ resource "local_file" "config" {
 resource "local_file" "templates" {
   filename = abspath("${path.root}/.generated/${var.name}.tmpl")
   content = templatefile("${path.module}/notification.tmpl.tftpl", {
-    dashboard_url = coalesce(var.dashboard_url, "")
+    dashboard_url = var.dashboard_url == null ? null : trimsuffix(var.dashboard_url, "/")
   })
 
   file_permission      = "0644"
@@ -91,7 +91,7 @@ resource "docker_container" "alertmanager" {
   ], local.web_flags)
 
   volumes {
-    host_path      = local_file.config.filename
+    host_path      = local_sensitive_file.config.filename
     container_path = "/etc/alertmanager/alertmanager.yml"
     read_only      = true
   }
@@ -136,6 +136,6 @@ resource "docker_container" "alertmanager" {
 
   # The mounted files are read only at startup, so a change needs a new container.
   lifecycle {
-    replace_triggered_by = [local_file.config, local_file.templates]
+    replace_triggered_by = [local_sensitive_file.config, local_file.templates]
   }
 }

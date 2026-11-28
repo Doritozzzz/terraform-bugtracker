@@ -13,8 +13,8 @@ variable "replicas" {
   type        = number
 
   validation {
-    condition     = var.replicas >= 1
-    error_message = "replicas must be at least 1."
+    condition     = var.replicas >= 1 && floor(var.replicas) == var.replicas
+    error_message = "replicas must be a whole number, 1 or more."
   }
 }
 

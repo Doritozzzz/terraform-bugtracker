@@ -28,8 +28,8 @@ variable "routes" {
   validation {
     condition = length(var.routes) > 0 && alltrue([
       for r in var.routes : can(regex("^[a-z0-9_-]+$", r.name)) && r.name != "index" && can(regex("^/[a-z0-9_-]+/$", r.path_prefix))
-    ])
-    error_message = "At least one route. Each needs a name of lowercase letters, digits, _ or - (not \"index\") and a path_prefix like /grafana/ (one segment, slashes on both sides)."
+    ]) && length(distinct([for r in var.routes : r.name])) == length(var.routes) && length(distinct([for r in var.routes : r.path_prefix])) == length(var.routes)
+    error_message = "At least one route. Each needs a unique name of lowercase letters, digits, _ or - (not \"index\") and a unique path_prefix like /grafana/ (one segment, slashes on both sides)."
   }
 }
 

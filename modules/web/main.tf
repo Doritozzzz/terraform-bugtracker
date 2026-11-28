@@ -1,6 +1,6 @@
 locals {
-  # One hash for all the files of the application: it changes only when the code changes.
-  source_hash = sha1(join("", [for f in fileset(var.source_dir, "**") : filesha1("${var.source_dir}/${f}")]))
+  # One hash for all the files of the application: it changes when any file is added, renamed or edited.
+  source_hash = sha1(join("", [for f in fileset(var.source_dir, "**") : "${f}:${filesha1("${var.source_dir}/${f}")}"]))
 }
 
 # The tag is the code hash: a code change means a new image, and every image

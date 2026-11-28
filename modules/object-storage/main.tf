@@ -5,8 +5,8 @@ locals {
 
   root_user = "admin"
 
-  # One hash for all the files to upload: it changes only when a file changes.
-  source_hash = sha1(join("", [for f in fileset(var.source_dir, "**") : filesha1("${var.source_dir}/${f}")]))
+  # One hash for all the files to upload: it changes when any file is added, renamed or edited.
+  source_hash = sha1(join("", [for f in fileset(var.source_dir, "**") : "${f}:${filesha1("${var.source_dir}/${f}")}"]))
 
   # Anonymous users may only download objects. MinIO's built-in "download"
   # policy would also let anyone list the bucket contents.
