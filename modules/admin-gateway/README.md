@@ -64,6 +64,5 @@ Every container also takes the optional `restart`, `memory` (MB, hard limit) and
 | ---- | ----------- |
 | password | Generated password of the login. |
 | url | URL of the gateway; every tool is under its path prefix. |
-| title | Name shown at the top of the index page, e.g. the project. | `string` | `"Admin"` | no |
 | user | User name of the login. |
 <!-- END_TF_DOCS -->

@@ -1,4 +1,4 @@
-Verification run: 2026-11-25 17:58:40 UTC
+Verification run: 2026-11-28 08:44:58 UTC
 Docker 29.10.0, Terraform v1.17.2
 
 == 1. Code checks (no containers needed) ==
@@ -12,7 +12,7 @@ PASS  no state, plan or secret file is versioned
 INFO  FRESH=1: destroying both environments, data included
 PASS  nothing of the project is left [0]
 PASS  make up-all brings up dev and prod
-INFO  deploy took 147 s
+INFO  deploy took 160 s
 PASS  a second plan of dev has nothing to change (code 0) [0]
 PASS  a second plan of prod has nothing to change (code 0) [0]
 PASS  dev: all 12 containers running [12]
@@ -74,7 +74,7 @@ PASS  with one replica stopped, 30 requests in a row all succeed [30]
 PASS  the stopped replica comes back healthy
 PASS  a crashed replica is restarted by Docker (restart policy)
 PASS  the load balancer and Prometheus reload their config
-PASS  the reload does not replace the load balancer [2026-11-25T18:00:55.231910756Z]
+PASS  the reload does not replace the load balancer [2026-11-28T08:47:44.341867481Z]
 PASS  after a reload, a crashed lb is restarted by Docker
 PASS  after a reload, a crashed prometheus is restarted by Docker
 PASS  the web answers again through the load balancer
@@ -104,7 +104,7 @@ PASS  prod: container metrics only cover its own environment [['prod']]
 PASS  prod: Grafana's prometheus data source works [OK]
 PASS  prod: Grafana's loki data source works [OK]
 PASS  prod: both dashboards are provisioned [2]
-INFO  prod p99 latency of the last 5 minutes: 45.6 ms
+INFO  prod p99 latency of the last 5 minutes: 45.4 ms
 
 == 9. Alerts (prod) ==
 PASS  Prometheus loaded the 11 alerting rules [11]
@@ -112,10 +112,10 @@ PASS  no alert fires while everything is healthy [[]]
 PASS  a stopped replica fires WebReplicaDown
 PASS  and its email reaches the mailbox
 PASS  the email links its dashboard through the admin gateway
-INFO  alert email received 66 s after the replica stopped
+INFO  alert email received 78 s after the replica stopped
 PASS  when it comes back, the resolved email arrives
 INFO  mailbox: [RESOLVED] WebReplicaDown (prod) | [FIRING:1] WebReplicaDown (prod)
 PASS  Telegram notifications sent without failures [0]
 INFO  Telegram notifications sent by this Alertmanager: 2
 
-93 passed, 0 failed (413 s)
+93 passed, 0 failed (455 s)
